@@ -1,0 +1,28 @@
+{
+  "name": "sonomos",
+  "owner": {
+    "name": "Sonomos, Inc.",
+    "email": "hello@sonomos.ai"
+  },
+  "metadata": {
+    "description": "Sonomos privacy plugins for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sonomos",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/sonomos/claude-plugins.git",
+        "path": "leak-counter"
+      },
+      "version": "1.0.0",
+      "description": "Persistent PII leak counter. Tracks sensitive data you expose to Claude across sessions with regex + Claude self-scan detection, interactive dashboard, and a persistent terminal counter.",
+      "author": {
+        "name": "Sonomos, Inc."
+      },
+      "category": "security",
+      "keywords": ["privacy", "pii", "security", "sensitive-data", "leak-detection"]
+    }
+  ]
+}
