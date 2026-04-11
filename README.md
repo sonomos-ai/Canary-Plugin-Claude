@@ -67,4 +67,4 @@ Canary shows you what you've already exposed. Sonomos prevents exposure in the f
 
 ---
 
-Copyright © 2026 Sonomos Inc. All rights reserved.
+Copyright © 2026 Sonomos, Inc. All rights reserved.
