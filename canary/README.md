@@ -9,7 +9,7 @@ The number only goes up.
 ## Install
 
 ```bash
-/plugin marketplace add sonomos/claude-plugins
+/plugin marketplace add sonomos-ai/Canary-Plugin
 /plugin install canary@sonomos
 ```
 

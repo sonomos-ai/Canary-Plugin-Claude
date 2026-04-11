@@ -6,7 +6,7 @@ Privacy plugins for Claude Code by [Sonomos](https://sonomos.ai).
 
 ```bash
 # 1. Add the Sonomos marketplace
-/plugin marketplace add sonomos/claude-plugins
+/plugin marketplace add sonomos-ai/Canary-Plugin
 
 # 2. Install Canary
 /plugin install canary@sonomos
