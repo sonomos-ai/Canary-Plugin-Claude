@@ -25,23 +25,23 @@ if [[ ! -f "$SONOMOS_DIR/.initialized" ]]; then
 
   cat << 'WELCOME'
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ◆ SONOMOS LEAK COUNTER — Installed
+  🐤 SONOMOS CANARY — Installed
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Sonomos is now monitoring your conversations for PII exposure.
 
   ✓ Regex:  16 detectors run silently after every task
             (credit cards, SSNs, emails, crypto addresses, ...)
-  ✓ LLM:   /sonomos:scan — Claude scans its own conversation
+  ✓ LLM:   /canary:scan — Claude scans its own conversation
             for 70+ semantic PII categories (names, addresses,
             legal IDs, medical records, trade secrets, ...)
             No API key needed. Zero extra cost.
 
 Commands:
-  /sonomos:leaked           Open interactive dashboard
-  /sonomos:leaked stats     Quick text summary
-  /sonomos:scan             Deep LLM scan of current conversation
-  /sonomos:leaked reset     Clear all data
+  /canary:leaked           Open interactive dashboard
+  /canary:leaked stats     Quick text summary
+  /canary:scan             Deep LLM scan of current conversation
+  /canary:leaked reset     Clear all data
 
 Persistent counter:
   Add to ~/.claude/settings.json to always see your PII count:
@@ -70,12 +70,12 @@ REGEX_COUNT=$(jq -r 'select(.detector == "regex") | .type' "$LEAKS_FILE" 2>/dev/
 LLM_COUNT=$(jq -r 'select(.detector == "llm") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ◆ SONOMOS: ${TOTAL} PII items exposed
+  🐤 Canary: ${TOTAL} PII items exposed
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   across ${SESSIONS} session(s) | ${HIGH_CONF} high-confidence
   regex: ${REGEX_COUNT} | claude self-scan: ${LLM_COUNT}
 ${BREAKDOWN}
-  /sonomos:leaked → dashboard | /sonomos:scan → deep scan
+  /canary:leaked → dashboard | /canary:scan → deep scan
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exit 0

@@ -15,7 +15,7 @@ LEAKS_FILE="$HOME/.sonomos/leaks.jsonl"
 cat > /dev/null
 
 if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then
-  printf '◆ Sonomos: 0 PII'
+  printf '🐤 Canary: 0 PII'
   exit 0
 fi
 
@@ -32,4 +32,4 @@ else
 fi
 RESET="\033[0m"
 
-printf '%b◆ Sonomos: %d PII%b (%d high)' "$COLOR" "$TOTAL" "$RESET" "$HIGH"
+printf '%b🐤 Canary: %d PII%b (%d high)' "$COLOR" "$TOTAL" "$RESET" "$HIGH"

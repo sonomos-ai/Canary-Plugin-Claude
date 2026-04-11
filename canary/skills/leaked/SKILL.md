@@ -47,7 +47,7 @@ if [ -f "$LEAKS" ] && [ -s "$LEAKS" ]; then
   echo "By detector:"
   jq -r '.detector' "$LEAKS" | sort | uniq -c | sort -rn
 else
-  echo "No PII detected yet. Run /sonomos:scan for a deep scan."
+  echo "No PII detected yet. Run /canary:scan for a deep scan."
 fi
 ```
 
@@ -63,7 +63,7 @@ echo "Leak counter reset to 0."
 ## Detection Architecture
 
 - **Regex (automatic):** 16 detectors with checksum validation run silently on every Stop hook. Catches structured PII: credit cards, SSNs, emails, IBANs, crypto addresses, AWS keys, VINs, phone numbers, etc.
-- **Claude self-scan (on-demand):** Run `/sonomos:scan` to have Claude review its own conversation for 70+ semantic categories: names, addresses, legal IDs, medical records, trade secrets, API tokens, and more. No API key needed — Claude is the detector.
+- **Claude self-scan (on-demand):** Run `/canary:scan` to have Claude review its own conversation for 70+ semantic categories: names, addresses, legal IDs, medical records, trade secrets, API tokens, and more. No API key needed — Claude is the detector.
 
 Never display raw PII values. Always show the redacted `value` field from the leaks file.
 

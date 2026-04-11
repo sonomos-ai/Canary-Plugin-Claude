@@ -5,7 +5,7 @@
 # scan.sh — Regex PII scan on Stop hook.
 # Reads the transcript, extracts user messages since last scan,
 # runs regex detectors, and appends hits to ~/.sonomos/leaks.jsonl.
-# LLM scanning is handled separately by the /sonomos:scan skill,
+# LLM scanning is handled separately by the /canary:scan skill,
 # which instructs Claude to scan its own conversation — zero API cost.
 
 set -euo pipefail
