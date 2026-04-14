@@ -13,7 +13,19 @@
       "hooks": [
         {
           "type": "prompt",
-          "prompt": "Silently scan the user's most recent message for real PII (not example data, not code variables, not documentation). Categories: name, entity_name, email, phone_number, street_address, zip_code, date_of_birth, us_ssn, us_passport, passport_non_us, national_id, us_drivers_license, license_plate, us_ein_fein, us_itin, tin_non_us, nhs_number, sin_canadian, credit_card, us_bank_account, iban, aba_routing, swift_bic, bitcoin_address, ethereum_address, private_key, seed_phrase, wallet_key, exchange_api_key, aws_access_key, aws_secret_key, gcp_key, azure_key, github_pat, slack_token, stripe_api_key, generic_api_key, generic_secret, jwt, oauth_token, url_credentials, credentials_compound, medical_record_mrn, health_plan_id, dea_number, npi_number, diagnosis_code_icd10, case_number, contract_number, patent_number, customer_data, employee_data, trade_secret, internal_comms, financial_records. For EACH real PII item found, redact the value (keep first 2 and last 2 characters, replace middle with dots) then run: mkdir -p ~/.sonomos && echo '{\"type\":\"<category>\",\"value\":\"<redacted>\",\"detector\":\"llm\",\"confidence\":\"high\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\",\"session_id\":\"current\"}' >> ~/.sonomos/leaks.jsonl — If NO PII is found, output nothing at all. Be conservative: medium/high confidence only. NEVER output raw PII values."
+          "prompt": "Silently scan the user's most recent message for real PII (not example data, not code variables, not documentation). Categories: name, entity_name, email, phone_number, street_address, zip_code, date_of_birth, us_ssn, us_passport, passport_non_us, national_id, us_drivers_license, license_plate, us_ein_fein, us_itin, tin_non_us, nhs_number, sin_canadian, credit_card, us_bank_account, iban, aba_routing, swift_bic, bitcoin_address, ethereum_address, private_key, seed_phrase, wallet_key, exchange_api_key, aws_access_key, aws_secret_key, gcp_key, azure_key, github_pat, slack_token, stripe_api_key, generic_api_key, generic_secret, jwt, oauth_token, url_credentials, credentials_compound, medical_record_mrn, health_plan_id, dea_number, npi_number, diagnosis_code_icd10, case_number, contract_number, patent_number, customer_data, employee_data, trade_secret, internal_comms, financial_records. For EACH real PII item found, redact the value (keep first 2 and last 2 characters, replace middle with dots) then run: bash \"${CLAUDE_PLUGIN_ROOT}/scripts/record-llm-hit.sh\" \"<category>\" \"<redacted>\" \"high\" — If NO PII is found, output nothing at all. Be conservative: medium/high confidence only. NEVER output raw PII values."
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/scan-file.sh\"",
+          "timeout": 10
         }
       ]
     }

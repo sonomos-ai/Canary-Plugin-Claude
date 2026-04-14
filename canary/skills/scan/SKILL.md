@@ -68,11 +68,10 @@ street_address, zip_code
 - **credentials_compound**: username+password pairs, connection strings with auth
 - **financial_records**: revenue, salary data, pricing strategies, investor info
 
-4. For each PII item found, redact the value (keep first 2 and last 2 chars, replace middle with dots), then append to the leaks file:
+4. For each PII item found, redact the value (keep first 2 and last 2 chars, replace middle with dots), then record the hit:
 
 ```bash
-TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo '{"type":"<category>","value":"<redacted>","detector":"llm","confidence":"high","timestamp":"'"$TIMESTAMP"'","session_id":"current"}' >> ~/.sonomos/leaks.jsonl
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/record-llm-hit.sh" "<category>" "<redacted>" "high"
 ```
 
 5. After scanning, report a summary:

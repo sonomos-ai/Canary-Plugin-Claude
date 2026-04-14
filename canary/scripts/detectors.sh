@@ -5,11 +5,27 @@
 # detectors.sh — Regex-based PII detection with checksum validation.
 # Takes text on $1, outputs JSONL hits to stdout.
 # Each hit: {"type":"<category>","value":"<redacted>","detector":"regex","confidence":"high|medium"}
+#
+# Portability: Works on both GNU grep (Linux) and BSD grep (macOS).
+# Falls back to Perl when grep -P is unavailable.
 
 TEXT="$1"
 
 if [[ -z "$TEXT" ]]; then
   exit 0
+fi
+
+# ── Portability shim: grep -oP / grep -oiP via Perl fallback ────────
+# macOS ships BSD grep without -P (PCRE) support. Perl is universal
+# on macOS and supports identical PCRE syntax.
+if echo "test" | grep -oP 'test' &>/dev/null; then
+  # GNU grep available — use native grep -oP
+  pgrep_o()  { grep -oP  "$1" 2>/dev/null || true; }
+  pgrep_oi() { grep -oiP "$1" 2>/dev/null || true; }
+else
+  # BSD grep — fall back to Perl
+  pgrep_o()  { perl -ne "while (/$1/g) { print \"\$&\\n\" }" 2>/dev/null || true; }
+  pgrep_oi() { perl -ne "while (/$1/gi) { print \"\$&\\n\" }" 2>/dev/null || true; }
 fi
 
 # ── Utility: redact a value, keeping first 2 and last 2 chars ────────
@@ -89,20 +105,29 @@ eth_valid() {
 }
 
 # ── Utility: VIN MOD-11 validation ───────────────────────────────────
+# Compatible with bash 3.2+ (no associative arrays)
 vin_valid() {
   local vin=$(echo "$1" | tr '[:lower:]' '[:upper:]')
   [[ ${#vin} -ne 17 ]] && return 1
-  # VIN transliteration values
-  local -A trans=([A]=1 [B]=2 [C]=3 [D]=4 [E]=5 [F]=6 [G]=7 [H]=8 [J]=1 [K]=2 [L]=3 [M]=4 [N]=5 [P]=7 [R]=9 [S]=2 [T]=3 [U]=4 [V]=5 [W]=6 [X]=7 [Y]=8 [Z]=9)
+  # VIN transliteration: letter → numeric value (I, O, Q excluded from VINs)
+  local trans_chars="ABCDEFGHJKLMNPRSTUVWXYZ"
+  local trans_vals="12345678123457923456789"
   local weights=(8 7 6 5 4 3 2 10 0 9 8 7 6 5 4 3 2)
   local sum=0
   for (( i=0; i<17; i++ )); do
     local c="${vin:$i:1}"
-    local val
+    local val=0
     if [[ "$c" =~ [0-9] ]]; then
       val=$c
     else
-      val=${trans[$c]:-0}
+      # Find character position in trans_chars to look up value
+      local j
+      for (( j=0; j<${#trans_chars}; j++ )); do
+        if [[ "${trans_chars:$j:1}" == "$c" ]]; then
+          val=${trans_vals:$j:1}
+          break
+        fi
+      done
     fi
     sum=$((sum + val * ${weights[$i]}))
   done
@@ -119,9 +144,11 @@ ssn_valid() {
   local area="${ssn:0:3}"
   local group="${ssn:3:2}"
   local serial="${ssn:5:4}"
+  # Strip leading zeros to prevent bash octal interpretation
+  local area_num=$((10#$area))
   # SSA exclusions
   [[ "$area" == "000" || "$area" == "666" ]] && return 1
-  [[ "$area" -ge 900 && "$area" -le 999 ]] && return 1
+  [[ $area_num -ge 900 && $area_num -le 999 ]] && return 1
   [[ "$group" == "00" ]] && return 1
   [[ "$serial" == "0000" ]] && return 1
   return 0
@@ -137,7 +164,7 @@ while IFS= read -r match; do
   if [[ ${#clean} -ge 13 && ${#clean} -le 19 ]] && luhn_valid "$clean"; then
     echo "{\"type\":\"credit_card\",\"value\":\"$(redact "$clean")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b(?:\d[ -]?){13,19}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b(?:\d[ -]?){13,19}\b')
 
 # ── 2. Email Addresses ──────────────────────────────────────────────
 # Require: 2+ char local part, real domain with dot, 2-12 char TLD
@@ -149,14 +176,14 @@ while IFS= read -r match; do
   # Skip common non-email patterns
   [[ "$local_part" =~ ^(noreply|no-reply|example|test|user|admin|root|localhost)$ ]] && continue
   echo "{\"type\":\"email\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
-done < <(echo "$TEXT" | grep -oiP '(?<![:/@])\b[a-z0-9][a-z0-9._%+\-]{0,62}[a-z0-9]@[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)*\.[a-z]{2,12}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_oi '(?<![:/@])\b[a-z0-9][a-z0-9._%+\-]{0,62}[a-z0-9]@[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)*\.[a-z]{2,12}\b')
 
 # ── 3. IBAN ──────────────────────────────────────────────────────────
 while IFS= read -r match; do
   if mod97_valid "$match"; then
     echo "{\"type\":\"iban\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b[A-Z]{2}\d{2}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{0,16}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b[A-Z]{2}\d{2}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{0,16}\b')
 
 # ── 4. IPv4 Addresses ───────────────────────────────────────────────
 while IFS= read -r match; do
@@ -164,47 +191,47 @@ while IFS= read -r match; do
   if [[ ! "$match" =~ ^(127\.|0\.|255\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|224\.|169\.254\.) ]]; then
     echo "{\"type\":\"ipv4\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b')
 
 # ── 5. IPv6 Addresses ───────────────────────────────────────────────
 while IFS= read -r match; do
   [[ "$match" == "::1" || "$match" == "::" ]] && continue
   echo "{\"type\":\"ipv6\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
-done < <(echo "$TEXT" | grep -oiP '(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}|(?:[0-9a-f]{1,4}:)*::[0-9a-f:]*' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_oi '(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}|(?:[0-9a-f]{1,4}:)*::[0-9a-f:]*')
 
 # ── 6. Bitcoin Addresses ────────────────────────────────────────────
 while IFS= read -r match; do
   if base58check_valid "$match"; then
     echo "{\"type\":\"bitcoin_address\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{25,89})\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b(?:[13][a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-zA-HJ-NP-Z0-9]{25,89})\b')
 
 # ── 7. Ethereum Addresses ───────────────────────────────────────────
 while IFS= read -r match; do
   if eth_valid "$match"; then
     echo "{\"type\":\"ethereum_address\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b0x[0-9a-fA-F]{40}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b0x[0-9a-fA-F]{40}\b')
 
 # ── 8. US SSN ────────────────────────────────────────────────────────
 while IFS= read -r match; do
   if ssn_valid "$match"; then
     echo "{\"type\":\"us_ssn\",\"value\":\"$(redact "$(echo "$match" | sed 's/[-  ]//g')")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b\d{3}[ -]?\d{2}[ -]?\d{4}\b' 2>/dev/null | \
-  grep -vP '^\d{3}[ -]?00|^000|^666|^9\d{2}' || true)
+done < <(echo "$TEXT" | pgrep_o '\b\d{3}[ -]?\d{2}[ -]?\d{4}\b' | \
+  pgrep_o '^(?!\d{3}[ -]?00)(?!000)(?!666)(?!9\d{2}).*')
 
 # ── 9. US ABA Routing Number ────────────────────────────────────────
 while IFS= read -r match; do
   if aba_valid "$match"; then
     echo "{\"type\":\"aba_routing\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oP '\b[0-9]{9}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b[0-9]{9}\b')
 
 # ── 10. URL with Credentials ────────────────────────────────────────
 while IFS= read -r match; do
   echo "{\"type\":\"url_credentials\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
-done < <(echo "$TEXT" | grep -oP 'https?://[^:]+:[^@]+@[^\s]+' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o 'https?://[^:]+:[^@]+@[^\s]+')
 
 # ── 11. Phone Numbers ───────────────────────────────────────────────
 # Use negative lookahead/lookbehind to avoid matching substrings of longer numbers
@@ -213,7 +240,7 @@ while IFS= read -r match; do
   [[ ${#digits} -lt 10 || ${#digits} -gt 15 ]] && continue
   # Exclude if digits are 13+ without formatting (likely CC)
   if [[ ${#digits} -ge 13 ]]; then
-    has_format=$(echo "$match" | grep -cP '[ ()\-+]' || true)
+    has_format=$(echo "$match" | grep -c '[ ()\-+]' || true)
     [[ "$has_format" -eq 0 ]] && continue
   fi
   # Exclude if Luhn-valid with 13+ digits (credit card)
@@ -221,35 +248,35 @@ while IFS= read -r match; do
     continue
   fi
   echo "{\"type\":\"phone_number\",\"value\":\"$(redact "$digits")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
-done < <(echo "$TEXT" | grep -oP '(?<!\d)(?:\+?1[ -]?)?(?:\(?\d{3}\)?[ -]?)?\d{3}[ -]?\d{4}(?!\d)|\+\d{1,3}[ -]?\d{4,14}(?!\d)' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '(?<!\d)(?:\+?1[ -]?)?(?:\(?\d{3}\)?[ -]?)?\d{3}[ -]?\d{4}(?!\d)|\+\d{1,3}[ -]?\d{4,14}(?!\d)')
 
 # ── 12. US Driver's License (multi-state format) ────────────────────
 while IFS= read -r match; do
   echo "{\"type\":\"us_drivers_license\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
-done < <(echo "$TEXT" | grep -oiP "(?:driver'?s?\s*(?:license|lic|licence)\s*(?:#|no\.?|number)?\s*[:=]?\s*)[A-Z]?\d{4,12}" 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_oi "(?:driver'?s?\\s*(?:license|lic|licence)\\s*(?:#|no\\.?|number)?\\s*[:=]?\\s*)[A-Z]?\\d{4,12}")
 
 # ── 13. AWS Access Key ──────────────────────────────────────────────
 while IFS= read -r match; do
   echo "{\"type\":\"aws_access_key\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
-done < <(echo "$TEXT" | grep -oP '\bAKIA[0-9A-Z]{16}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\bAKIA[0-9A-Z]{16}\b')
 
 # Also catch AWS secret keys
 while IFS= read -r match; do
   echo "{\"type\":\"aws_secret_key\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
-done < <(echo "$TEXT" | grep -oP '(?<=aws_secret_access_key\s*=\s*|AWS_SECRET_ACCESS_KEY\s*=\s*)[A-Za-z0-9/+=]{40}' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '(?<=aws_secret_access_key\s*=\s*|AWS_SECRET_ACCESS_KEY\s*=\s*)[A-Za-z0-9/+=]{40}')
 
 # ── 14. US Medicare/Medicaid ID (MBI) ────────────────────────────────
 # Format: 1C11-AA1-AA11 (C=letter excl S,L,O,I,B,Z; 1=digit excl 0)
 while IFS= read -r match; do
   echo "{\"type\":\"us_mbi\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
-done < <(echo "$TEXT" | grep -oP '\b[1-9][AC-HJKMNP-RT-Y][0-9AC-HJKMNP-RT-Y][0-9]-[A-Z]{2}[0-9]-[A-Z]{2}[0-9]{2}\b' 2>/dev/null || true)
+done < <(echo "$TEXT" | pgrep_o '\b[1-9][AC-HJKMNP-RT-Y][0-9AC-HJKMNP-RT-Y][0-9]-[A-Z]{2}[0-9]-[A-Z]{2}[0-9]{2}\b')
 
 # ── 15. VIN (Vehicle Identification Number) ──────────────────────────
 while IFS= read -r match; do
   if vin_valid "$match"; then
     echo "{\"type\":\"vin\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"high\"}"
   fi
-done < <(echo "$TEXT" | grep -oiP '\b[A-HJ-NPR-Z0-9]{17}\b' 2>/dev/null | \
-  grep -viP '^[0-9]+$' | grep -viP '^[A-Z]+$' || true)
+done < <(echo "$TEXT" | pgrep_oi '\b[A-HJ-NPR-Z0-9]{17}\b' | \
+  pgrep_o '^(?!\d+$)' | pgrep_oi '^(?![A-Z]+$).*')
 
 exit 0

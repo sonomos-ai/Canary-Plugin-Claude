@@ -11,18 +11,14 @@
   "plugins": [
     {
       "name": "canary",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/sonomos-ai/Canary-Plugin.git",
-        "path": "canary"
-      },
-      "version": "1.0.0",
+      "source": "./canary",
       "description": "Sonomos Canary — persistent PII leak counter. Tracks sensitive data you expose to Claude across sessions with regex + Claude self-scan detection, interactive dashboard, and a persistent terminal counter.",
       "author": {
         "name": "Sonomos, Inc."
       },
       "category": "security",
-      "keywords": ["privacy", "pii", "security", "sensitive-data", "leak-detection", "canary"]
+      "keywords": ["privacy", "pii", "security", "sensitive-data", "leak-detection", "canary"],
+      "tags": ["privacy", "security", "compliance", "pii-detection", "data-protection"]
     }
   ]
 }

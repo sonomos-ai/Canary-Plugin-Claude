@@ -12,7 +12,7 @@ import webbrowser
 from collections import Counter, defaultdict
 from datetime import datetime
 
-SONOMOS_DIR = os.path.expanduser("~/.sonomos")
+SONOMOS_DIR = os.environ.get("CLAUDE_PLUGIN_DATA", os.path.expanduser("~/.sonomos"))
 LEAKS_FILE = os.path.join(SONOMOS_DIR, "leaks.jsonl")
 CONFIG_FILE = os.path.join(SONOMOS_DIR, "config.json")
 OUTPUT_FILE = os.path.join(SONOMOS_DIR, "dashboard.html")

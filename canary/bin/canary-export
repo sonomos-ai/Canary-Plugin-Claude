@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Copyright © 2026 Sonomos, Inc.
+# canary-export — Export PII detections to CSV or JSON.
+# Usage: canary-export [--csv|--json] [--output FILE]
+
+set -euo pipefail
+
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
+FORMAT="csv"
+OUTPUT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --csv)  FORMAT="csv"; shift ;;
+    --json) FORMAT="json"; shift ;;
+    --output|-o) OUTPUT="$2"; shift 2 ;;
+    --help|-h)
+      echo "Usage: canary-export [--csv|--json] [--output FILE]"
+      echo ""
+      echo "Export PII detections to CSV or JSON format."
+      echo ""
+      echo "Options:"
+      echo "  --csv       Output as CSV (default)"
+      echo "  --json      Output as JSON array"
+      echo "  --output/-o Write to file instead of stdout"
+      exit 0
+      ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then
+  echo "No detections to export." >&2
+  exit 0
+fi
+
+generate_output() {
+  if [[ "$FORMAT" == "json" ]]; then
+    echo "["
+    local first=true
+    while IFS= read -r line; do
+      [[ -z "$line" ]] && continue
+      if [[ "$first" == true ]]; then
+        first=false
+      else
+        echo ","
+      fi
+      printf "  %s" "$line"
+    done < "$LEAKS_FILE"
+    echo ""
+    echo "]"
+  else
+    echo "type,value,detector,confidence,timestamp,session_id"
+    jq -r '[.type, .value, .detector, .confidence, .timestamp, .session_id] | @csv' "$LEAKS_FILE" 2>/dev/null
+  fi
+}
+
+if [[ -n "$OUTPUT" ]]; then
+  generate_output > "$OUTPUT"
+  echo "Exported to $OUTPUT" >&2
+else
+  generate_output
+fi

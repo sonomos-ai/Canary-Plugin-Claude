@@ -1,0 +1,53 @@
+name: Validate Plugin
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          echo "Validating marketplace.json..."
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          echo "Validating plugin.json..."
+          python3 -m json.tool canary/.claude-plugin/plugin.json > /dev/null
+          echo "Validating hooks.json..."
+          python3 -m json.tool canary/hooks/hooks.json > /dev/null
+          echo "All JSON valid."
+
+      - name: Check bash syntax
+        run: |
+          for f in canary/scripts/*.sh canary/bin/*; do
+            echo "Checking $f..."
+            bash -n "$f"
+          done
+          echo "All bash syntax valid."
+
+      - name: Check Python syntax
+        run: python3 -c "import py_compile; py_compile.compile('canary/scripts/dashboard.py', doraise=True)"
+
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: canary/scripts
+          severity: warning
+        continue-on-error: true
+
+      - name: Run detector tests
+        run: bash tests/test-detectors.sh
+
+      - name: Run redaction tests
+        run: bash tests/test-redact.sh
+
+      - name: Run checksum tests
+        run: bash tests/test-checksums.sh
+
+      - name: Run false positive tests
+        run: bash tests/test-no-false-positives.sh

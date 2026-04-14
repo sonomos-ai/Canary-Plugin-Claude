@@ -10,9 +10,10 @@
 
 set -euo pipefail
 
-SONOMOS_DIR="$HOME/.sonomos"
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIDENCE_THRESHOLD="${CLAUDE_PLUGIN_OPTION_CONFIDENCE_THRESHOLD:-medium}"
 
 mkdir -p "$SONOMOS_DIR"
 
@@ -65,6 +66,11 @@ HITS=$(bash "$SCRIPT_DIR/detectors.sh" "$NEW_TEXT" 2>/dev/null || true)
 if [[ -n "$HITS" ]]; then
   echo "$HITS" | while IFS= read -r hit; do
     [[ -z "$hit" ]] && continue
+    # Respect confidence threshold from userConfig
+    if [[ "$CONFIDENCE_THRESHOLD" == "high" ]]; then
+      HIT_CONF=$(echo "$hit" | jq -r '.confidence // "medium"')
+      [[ "$HIT_CONF" != "high" ]] && continue
+    fi
     echo "$hit" | jq -c \
       --arg ts "$TIMESTAMP" \
       --arg sid "$SESSION_ID" \

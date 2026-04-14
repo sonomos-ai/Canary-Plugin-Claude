@@ -10,7 +10,7 @@ set -euo pipefail
 # Drain stdin (Claude Code pipes hook JSON data that we don't need)
 cat > /dev/null &
 
-SONOMOS_DIR="$HOME/.sonomos"
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 
 mkdir -p "$SONOMOS_DIR"
@@ -26,7 +26,7 @@ if [[ ! -f "$SONOMOS_DIR/.initialized" ]]; then
     chmod +x "$SONOMOS_DIR/statusline.sh"
   fi
 
-  cat << 'WELCOME'
+  cat << WELCOME
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🐤 SONOMOS CANARY — Installed
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,7 +48,7 @@ Commands:
 
 Persistent counter:
   Add to ~/.claude/settings.json to always see your PII count:
-  "statusLine": {"type":"command","command":"bash ~/.sonomos/statusline.sh"}
+  "statusLine": {"type":"command","command":"bash ${SONOMOS_DIR}/statusline.sh"}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WELCOME

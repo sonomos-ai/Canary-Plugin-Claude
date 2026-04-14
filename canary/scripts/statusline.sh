@@ -9,7 +9,8 @@
 
 set -euo pipefail
 
-LEAKS_FILE="$HOME/.sonomos/leaks.jsonl"
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 
 # Read stdin (Claude Code session JSON) but we don't need it for the counter
 cat > /dev/null

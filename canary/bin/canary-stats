@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Copyright © 2026 Sonomos, Inc.
+# canary-stats — Quick PII exposure stats from the command line.
+# Usage: canary-stats [--json]
+
+set -euo pipefail
+
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
+
+if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then
+  if [[ "${1:-}" == "--json" ]]; then
+    echo '{"total":0,"sessions":0,"high_confidence":0,"types":{},"detectors":{}}'
+  else
+    echo "No PII detected yet."
+  fi
+  exit 0
+fi
+
+TOTAL=$(wc -l < "$LEAKS_FILE")
+SESSIONS=$(jq -r '.session_id' "$LEAKS_FILE" 2>/dev/null | sort -u | wc -l)
+HIGH=$(jq -r 'select(.confidence=="high") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
+REGEX_COUNT=$(jq -r 'select(.detector=="regex") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
+LLM_COUNT=$(jq -r 'select(.detector=="llm") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
+
+if [[ "${1:-}" == "--json" ]]; then
+  TYPES=$(jq -r '.type' "$LEAKS_FILE" | sort | uniq -c | sort -rn | awk '{printf "\"%s\":%d,", $2, $1}' | sed 's/,$//')
+  echo "{\"total\":$TOTAL,\"sessions\":$SESSIONS,\"high_confidence\":$HIGH,\"regex\":$REGEX_COUNT,\"llm\":$LLM_COUNT,\"types\":{$TYPES}}"
+else
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  Canary: $TOTAL PII items exposed"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  Sessions: $SESSIONS | High confidence: $HIGH"
+  echo "  Regex: $REGEX_COUNT | Claude self-scan: $LLM_COUNT"
+  echo ""
+  echo "  By type:"
+  jq -r '.type' "$LEAKS_FILE" | sort | uniq -c | sort -rn | head -15 | awk '{printf "    %-24s %d\n", $2, $1}'
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi

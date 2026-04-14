@@ -22,7 +22,8 @@ python3 "${CLAUDE_SKILL_DIR}/../../scripts/dashboard.py"
 Then give a brief text summary:
 
 ```bash
-LEAKS="$HOME/.sonomos/leaks.jsonl"
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+LEAKS="$SONOMOS_DIR/leaks.jsonl"
 if [ -f "$LEAKS" ] && [ -s "$LEAKS" ]; then
   TOTAL=$(wc -l < "$LEAKS")
   echo "Total: $TOTAL PII items"
@@ -36,7 +37,8 @@ fi
 Text-only summary without opening browser:
 
 ```bash
-LEAKS="$HOME/.sonomos/leaks.jsonl"
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+LEAKS="$SONOMOS_DIR/leaks.jsonl"
 if [ -f "$LEAKS" ] && [ -s "$LEAKS" ]; then
   TOTAL=$(wc -l < "$LEAKS")
   SESSIONS=$(jq -r '.session_id' "$LEAKS" | sort -u | wc -l)
@@ -57,7 +59,8 @@ fi
 **Ask for confirmation first.** If confirmed:
 
 ```bash
-rm -f "$HOME/.sonomos/leaks.jsonl" "$HOME/.sonomos/.cursor_"*
+SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
+rm -f "$SONOMOS_DIR/leaks.jsonl" "$SONOMOS_DIR/.cursor_"*
 echo "Leak counter reset to 0."
 ```
 

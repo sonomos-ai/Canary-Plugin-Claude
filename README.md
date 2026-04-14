@@ -59,6 +59,39 @@ Add to `~/.claude/settings.json`:
 
 See the [Canary README](canary/README.md) for full documentation.
 
+## Team Distribution
+
+To auto-install Canary for all team members, add this to your project's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "sonomos": {
+      "source": {
+        "source": "github",
+        "repo": "sonomos-ai/Canary-Plugin"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "canary@sonomos": true
+  }
+}
+```
+
+Team members will be prompted to install the marketplace when they open the project.
+
+## CLI Tools
+
+After installing, these commands are available in the Bash tool:
+
+| Command | Description |
+|---------|-------------|
+| `canary-stats` | Quick PII exposure stats |
+| `canary-stats --json` | Stats as JSON |
+| `canary-export` | Export detections to CSV |
+| `canary-export --json` | Export as JSON array |
+
 ## About Sonomos
 
 [Sonomos](https://sonomos.ai) detects and masks PII *before* it reaches AI. The browser extension works with Claude, ChatGPT, Gemini, Grok, and more.
