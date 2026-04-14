@@ -12,11 +12,15 @@
   "category": "security",
   "userConfig": {
     "llm_scan_enabled": {
-      "description": "Enable automatic Claude self-scan for semantic PII after every prompt (true/false, default: true)",
+      "title": "Enable LLM scan",
+      "description": "Enable automatic Claude self-scan for semantic PII after every prompt (default: true)",
+      "type": "boolean",
       "sensitive": false
     },
     "confidence_threshold": {
+      "title": "Confidence threshold",
       "description": "Minimum confidence to record a detection: high or medium (default: medium)",
+      "type": "string",
       "sensitive": false
     }
   }
