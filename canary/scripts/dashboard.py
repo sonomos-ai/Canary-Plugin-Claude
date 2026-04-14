@@ -102,13 +102,13 @@ def generate_html(leaks, config):
 
     # Category colors
     cat_colors = {
-        "Identity": "#ef4444", "Financial": "#f59e0b", "Crypto": "#8b5cf6",
-        "Legal": "#6366f1", "Medical": "#ec4899", "Technical": "#06b6d4",
-        "Network": "#10b981", "Organizational": "#f97316", "Other": "#6b7280"
+        "Identity": "#e74c3c", "Financial": "#e67e22", "Crypto": "#8e44ad",
+        "Legal": "#5b6abf", "Medical": "#d35498", "Technical": "#16a085",
+        "Network": "#27ae60", "Organizational": "#e67e22", "Other": "#7f8c8d"
     }
 
     # JSON data for JS
-    cat_data = json.dumps([{"name": k, "count": v, "color": cat_colors.get(k, "#6b7280")}
+    cat_data = json.dumps([{"name": k, "count": v, "color": cat_colors.get(k, "#7f8c8d")}
                            for k, v in sorted(cat_counts.items(), key=lambda x: -x[1])])
     timeline_data = json.dumps([{"date": d, "count": c} for d, c in timeline])
     top_types_data = json.dumps([{"type": t.replace("_", " "), "count": c} for t, c in top_types])
@@ -125,13 +125,10 @@ def generate_html(leaks, config):
     if not llm_enabled:
         llm_warning = """
         <div class="llm-warning">
-          <span class="warn-icon">⚠</span>
-          <div>
-            <strong>LLM scanning is disabled</strong>
-            <p>70+ semantic categories are not being detected: names, addresses, legal IDs,
-            medical records, trade secrets, crypto keys, API tokens, and more.</p>
-            <p>Enable in <code>~/.sonomos/config.json</code> → <code>"llm_scan_enabled": true</code></p>
-          </div>
+          <strong>LLM scanning is disabled.</strong>
+          70+ semantic categories are not being detected — names, addresses, legal IDs,
+          medical records, trade secrets, crypto keys, and more.
+          Enable in <code>~/.sonomos/config.json</code> &rarr; <code>"llm_scan_enabled": true</code>
         </div>"""
 
     html = f"""<!DOCTYPE html>
@@ -139,167 +136,360 @@ def generate_html(leaks, config):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sonomos — PII Leak Dashboard</title>
+<title>SONOMOS &mdash; Sensitive Data Exposure Report</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
   :root {{
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a27;
-    --border: #2a2a3d;
-    --text: #e4e4ed;
-    --text-dim: #8888a0;
-    --accent: #6ee7b7;
-    --accent2: #34d399;
-    --danger: #ef4444;
-    --warn: #f59e0b;
-    --sonomos-gradient: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 100%);
+    --bg: #ffffff;
+    --surface: #f7f8f9;
+    --surface2: #eef0f2;
+    --border: #e2e5e9;
+    --text: #1a1a1f;
+    --text-secondary: #52555c;
+    --text-dim: #8b8f96;
+    --accent: #a8e6c3;
+    --accent-deep: #6dcf97;
+    --accent-subtle: #e8f8ef;
+    --dark: #1a1a1f;
+    --danger: #d94a4a;
+    --warn: #d4930d;
   }}
 
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-  body {{ font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }}
+
+  body {{
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.6;
+  }}
+
+  h1, h2, h3, .heading {{
+    font-family: 'Jost', 'Futura', sans-serif;
+  }}
+
+  /* ── Header ─────────────────────────────────────── */
 
   .header {{
-    background: var(--surface);
+    background: var(--bg);
     border-bottom: 1px solid var(--border);
-    padding: 20px 32px;
+    padding: 24px 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
-    backdrop-filter: blur(12px);
   }}
-  .logo {{ display: flex; align-items: center; gap: 12px; }}
-  .logo-mark {{
-    width: 36px; height: 36px;
-    background: var(--sonomos-gradient);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; color: #0a0a0f;
-  }}
-  .logo-text {{ font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }}
-  .logo-sub {{ font-size: 12px; color: var(--text-dim); font-weight: 400; }}
 
-  .big-counter {{
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 48px;
+  .logo {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 20px;
     font-weight: 700;
-    background: var(--sonomos-gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-align: right;
+    letter-spacing: 3px;
+    color: var(--dark);
+    text-decoration: none;
+  }}
+  .logo-sub {{
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+  }}
+
+  .header-right {{ text-align: right; }}
+  .big-counter {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--dark);
     line-height: 1;
   }}
-  .big-counter-label {{ font-size: 11px; color: var(--text-dim); text-align: right; text-transform: uppercase; letter-spacing: 1px; }}
+  .big-counter-label {{
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+  }}
 
-  .container {{ max-width: 1200px; margin: 0 auto; padding: 24px 32px; }}
+  /* ── Layout ─────────────────────────────────────── */
 
-  .stats-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }}
+  .container {{ max-width: 1120px; margin: 0 auto; padding: 32px 40px; }}
+
+  .stats-row {{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }}
+
   .stat-card {{
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
+    padding: 20px 22px;
   }}
-  .stat-value {{ font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; }}
-  .stat-label {{ font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }}
+  .stat-value {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--dark);
+  }}
+  .stat-value.warn {{ color: var(--danger); }}
+  .stat-label {{
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    font-weight: 500;
+  }}
 
-  .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }}
+  .grid {{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }}
+
   .card {{
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
+    padding: 22px 24px;
   }}
-  .card-title {{ font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-weight: 600; }}
+  .card-title {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 18px;
+    font-weight: 600;
+  }}
 
-  .bar-row {{ display: flex; align-items: center; margin: 8px 0; gap: 8px; }}
-  .bar-label {{ width: 120px; font-size: 12px; color: var(--text-dim); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-  .bar {{ height: 24px; border-radius: 4px; transition: width 0.6s ease; min-width: 2px; }}
-  .bar-count {{ font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); min-width: 30px; }}
+  /* ── Bar Charts ──────────────────────────────────── */
 
-  .cat-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }}
+  .bar-row {{
+    display: flex;
+    align-items: center;
+    margin: 7px 0;
+    gap: 10px;
+  }}
+  .bar-label {{
+    width: 110px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }}
+  .bar {{
+    height: 22px;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    min-width: 2px;
+  }}
+  .bar-count {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 28px;
+  }}
+
+  /* ── Category Grid ──────────────────────────────── */
+
+  .cat-grid {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }}
   .cat-chip {{
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface2); border-radius: 8px; padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
   }}
-  .cat-dot {{ width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }}
-  .cat-name {{ font-size: 12px; flex: 1; }}
-  .cat-count {{ font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }}
+  .cat-dot {{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }}
+  .cat-name {{ font-size: 12px; color: var(--text-secondary); flex: 1; }}
+  .cat-count {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dark);
+  }}
 
-  .timeline-bar {{ display: flex; align-items: flex-end; gap: 2px; height: 80px; }}
-  .timeline-col {{ flex: 1; background: var(--accent2); border-radius: 2px 2px 0 0; min-width: 4px; opacity: 0.7; transition: opacity 0.2s; cursor: pointer; position: relative; }}
+  /* ── Timeline ───────────────────────────────────── */
+
+  .timeline-bar {{
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 80px;
+  }}
+  .timeline-col {{
+    flex: 1;
+    background: var(--accent-deep);
+    border-radius: 3px 3px 0 0;
+    min-width: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    position: relative;
+  }}
   .timeline-col:hover {{ opacity: 1; }}
-  .timeline-col .tip {{ display: none; position: absolute; bottom: 105%; left: 50%; transform: translateX(-50%);
-    background: var(--surface2); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px;
-    font-size: 10px; white-space: nowrap; z-index: 10; }}
+  .timeline-col .tip {{
+    display: none;
+    position: absolute;
+    bottom: 105%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--dark);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    white-space: nowrap;
+    z-index: 10;
+  }}
   .timeline-col:hover .tip {{ display: block; }}
 
-  .recent-table {{ width: 100%; }}
-  .recent-table th {{ font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }}
-  .recent-table td {{ font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border); }}
-  .recent-table tr:hover {{ background: var(--surface2); }}
-  .badge {{ font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }}
-  .badge-high {{ background: rgba(239,68,68,0.15); color: #ef4444; }}
-  .badge-medium {{ background: rgba(245,158,11,0.15); color: #f59e0b; }}
-  .badge-low {{ background: rgba(107,114,128,0.15); color: #9ca3af; }}
-  .badge-regex {{ background: rgba(6,182,212,0.1); color: #06b6d4; }}
-  .badge-llm {{ background: rgba(139,92,246,0.1); color: #8b5cf6; }}
-  .mono {{ font-family: 'JetBrains Mono', monospace; font-size: 12px; }}
+  /* ── Table ───────────────────────────────────────── */
+
+  .recent-table {{ width: 100%; border-collapse: collapse; }}
+  .recent-table th {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }}
+  .recent-table td {{
+    font-size: 13px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }}
+  .recent-table tr:hover {{ background: var(--accent-subtle); }}
+
+  .badge {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }}
+  .badge-high {{ background: #fdeaea; color: #c0392b; }}
+  .badge-medium {{ background: #fef4e0; color: #b8860b; }}
+  .badge-low {{ background: #f0f1f3; color: #7f8c8d; }}
+  .badge-regex {{ background: #e0f5f1; color: #0e8a6d; }}
+  .badge-llm {{ background: #ece5f8; color: #6c3fad; }}
+
+  .mono {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }}
+
+  /* ── LLM Warning ────────────────────────────────── */
 
   .llm-warning {{
-    background: rgba(245,158,11,0.08);
-    border: 1px solid rgba(245,158,11,0.3);
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
+    background: #fef8ed;
+    border: 1px solid #f0ddb8;
+    border-radius: 10px;
+    padding: 16px 22px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
   }}
-  .llm-warning .warn-icon {{ font-size: 20px; }}
-  .llm-warning p {{ font-size: 13px; color: var(--text-dim); margin-top: 4px; }}
-  .llm-warning code {{ background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12px; }}
-
-  .cta {{
+  .llm-warning strong {{ color: var(--dark); }}
+  .llm-warning code {{
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    margin-top: 24px;
-  }}
-  .cta-title {{ font-size: 16px; font-weight: 600; margin-bottom: 8px; }}
-  .cta-desc {{ font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }}
-  .cta-btn {{
-    display: inline-block;
-    background: var(--sonomos-gradient);
-    color: #0a0a0f;
-    padding: 10px 24px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
   }}
 
-  .footer {{ text-align: center; padding: 24px; font-size: 11px; color: var(--text-dim); }}
+  /* ── Sonomos Section ────────────────────────────── */
+
+  .sonomos-section {{
+    margin-top: 40px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }}
+  .sonomos-section .tagline {{
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 10px;
+    letter-spacing: -0.2px;
+  }}
+  .sonomos-section .tagline-sub {{
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 480px;
+    margin: 0 auto 20px;
+    line-height: 1.6;
+  }}
+  .sonomos-link {{
+    display: inline-block;
+    font-family: 'Jost', 'Futura', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dark);
+    text-decoration: none;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 2px;
+    transition: border-color 0.2s;
+  }}
+  .sonomos-link:hover {{ border-color: var(--accent-deep); }}
+
+  /* ── Footer ─────────────────────────────────────── */
+
+  .footer {{
+    text-align: center;
+    padding: 20px 40px;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+  }}
+  .footer a {{ color: var(--text-dim); text-decoration: none; }}
+  .footer a:hover {{ color: var(--dark); }}
 </style>
 </head>
 <body>
+
 <div class="header">
-  <div class="logo">
-    <div class="logo-mark">S</div>
-    <div>
-      <div class="logo-text">Sonomos</div>
-      <div class="logo-sub">PII Leak Counter</div>
-    </div>
-  </div>
   <div>
+    <a href="https://sonomos.ai" class="logo">SONOMOS</a>
+    <div class="logo-sub">Sensitive Data Monitor</div>
+  </div>
+  <div class="header-right">
     <div class="big-counter">{total}</div>
-    <div class="big-counter-label">PII Items Exposed</div>
+    <div class="big-counter-label">Exposures Detected</div>
   </div>
 </div>
 
@@ -308,7 +498,7 @@ def generate_html(leaks, config):
 
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-value" style="color: var(--danger)">{total}</div>
+      <div class="stat-value warn">{total}</div>
       <div class="stat-label">Total Exposures</div>
     </div>
     <div class="stat-card">
@@ -316,7 +506,7 @@ def generate_html(leaks, config):
       <div class="stat-label">Sessions</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color: var(--danger)">{high_conf}</div>
+      <div class="stat-value warn">{high_conf}</div>
       <div class="stat-label">High Confidence</div>
     </div>
     <div class="stat-card">
@@ -336,23 +526,23 @@ def generate_html(leaks, config):
     </div>
   </div>
 
-  <div class="card" style="margin-bottom: 24px">
+  <div class="card" style="margin-bottom: 28px">
     <div class="card-title">Exposure Timeline</div>
     <div class="timeline-bar" id="timeline"></div>
   </div>
 
-  <div class="card" style="margin-bottom: 24px">
-    <div class="card-title">Detection Split</div>
+  <div class="card" style="margin-bottom: 28px">
+    <div class="card-title">Detection Method</div>
     <div style="display:flex;gap:24px;align-items:center">
       <div style="flex:1">
         <div class="bar-row">
-          <div class="bar-label">Regex</div>
-          <div class="bar" style="width:{regex_count*100/max(total,1):.0f}%;background:#06b6d4"></div>
+          <div class="bar-label">Pattern</div>
+          <div class="bar" style="width:{regex_count*100/max(total,1):.0f}%;background:var(--accent-deep)"></div>
           <div class="bar-count">{regex_count}</div>
         </div>
         <div class="bar-row">
-          <div class="bar-label">LLM</div>
-          <div class="bar" style="width:{llm_count*100/max(total,1):.0f}%;background:#8b5cf6"></div>
+          <div class="bar-label">Semantic</div>
+          <div class="bar" style="width:{llm_count*100/max(total,1):.0f}%;background:#8e7cc3"></div>
           <div class="bar-count">{llm_count}</div>
         </div>
       </div>
@@ -362,19 +552,21 @@ def generate_html(leaks, config):
   <div class="card">
     <div class="card-title">Recent Detections</div>
     <table class="recent-table">
-      <thead><tr><th>Type</th><th>Value</th><th>Detector</th><th>Confidence</th><th>Time</th></tr></thead>
+      <thead><tr><th>Type</th><th>Value</th><th>Method</th><th>Confidence</th><th>Time</th></tr></thead>
       <tbody id="recentTable"></tbody>
     </table>
   </div>
 
-  <div class="cta">
-    <div class="cta-title">Catch PII before it reaches AI</div>
-    <div class="cta-desc">Sonomos detects and masks sensitive data in real-time — before you hit send.<br>Browser extension for Claude, ChatGPT, Gemini, and more.</div>
-    <a href="https://sonomos.ai" class="cta-btn">Get Sonomos →</a>
+  <div class="sonomos-section">
+    <div class="tagline">Canary shows what you've shared. Sonomos prevents it.</div>
+    <div class="tagline-sub">Detect and mask sensitive data in real time &mdash; before it reaches Claude, ChatGPT, Gemini, or any AI. Works everywhere you type.</div>
+    <a href="https://sonomos.ai" class="sonomos-link">sonomos.ai</a>
   </div>
 </div>
 
-<div class="footer">Copyright &copy; 2026 Sonomos Inc. All rights reserved.</div>
+<div class="footer">
+  <a href="https://sonomos.ai">SONOMOS</a> &nbsp;&middot;&nbsp; Copyright &copy; 2026 Sonomos, Inc.
+</div>
 
 <script>
 const catData = {cat_data};
@@ -393,7 +585,7 @@ catData.forEach(c => {{
 const topEl = document.getElementById('topTypes');
 const maxCount = topTypesData[0]?.count || 1;
 topTypesData.forEach(t => {{
-  topEl.innerHTML += `<div class="bar-row"><div class="bar-label">${{t.type}}</div><div class="bar" style="width:${{t.count*100/maxCount}}%;background:var(--accent2)"></div><div class="bar-count">${{t.count}}</div></div>`;
+  topEl.innerHTML += `<div class="bar-row"><div class="bar-label">${{t.type}}</div><div class="bar" style="width:${{t.count*100/maxCount}}%;background:var(--accent-deep)"></div><div class="bar-count">${{t.count}}</div></div>`;
 }});
 
 // Timeline
@@ -409,7 +601,7 @@ const tbody = document.getElementById('recentTable');
 recentData.forEach(r => {{
   const confClass = r.confidence === 'high' ? 'badge-high' : r.confidence === 'medium' ? 'badge-medium' : 'badge-low';
   const detClass = r.detector === 'regex' ? 'badge-regex' : 'badge-llm';
-  tbody.innerHTML += `<tr><td>${{r.type}}</td><td class="mono">${{r.value}}</td><td><span class="badge ${{detClass}}">${{r.detector}}</span></td><td><span class="badge ${{confClass}}">${{r.confidence}}</span></td><td class="mono" style="color:var(--text-dim)">${{r.timestamp}}</td></tr>`;
+  tbody.innerHTML += `<tr><td>${{r.type}}</td><td class="mono">${{r.value}}</td><td><span class="badge ${{detClass}}">${{r.detector}}</span></td><td><span class="badge ${{confClass}}">${{r.confidence}}</span></td><td class="mono">${{r.timestamp}}</td></tr>`;
 }});
 </script>
 </body>
