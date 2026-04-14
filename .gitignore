@@ -8,5 +8,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Python
+__pycache__/
+
 # Sonomos runtime data (never commit user data)
 .sonomos/
