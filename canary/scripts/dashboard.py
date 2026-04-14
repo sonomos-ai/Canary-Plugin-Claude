@@ -558,7 +558,7 @@ def generate_html(leaks, config):
   </div>
 
   <div class="sonomos-section">
-    <div class="tagline">Canary shows what you've shared. Sonomos prevents it.</div>
+    <div class="tagline">Our "Canary" plugin shows what you've shared. Our tool prevents it.</div>
     <div class="tagline-sub">Detect and mask sensitive data in real time &mdash; before it reaches Claude, ChatGPT, Gemini, or any AI. Works everywhere you type.</div>
     <a href="https://sonomos.ai" class="sonomos-link">sonomos.ai</a>
   </div>
