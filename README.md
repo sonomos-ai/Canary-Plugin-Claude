@@ -1,4 +1,4 @@
-# Canary (Claude Plugin)
+# 🐤 Canary (Sonomos Claude Plugin)
 
 Privacy plugin for Claude Code by [Sonomos](https://sonomos.ai).
 
