@@ -7,6 +7,9 @@
 
 set -euo pipefail
 
+# Drain stdin (Claude Code pipes hook JSON data that we don't need)
+cat > /dev/null &
+
 SONOMOS_DIR="$HOME/.sonomos"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 
