@@ -1,6 +1,7 @@
 ---
 name: leaked
 description: View your PII exposure dashboard — shows all sensitive data detected across Claude Code sessions with category breakdown, timeline, and details. Use when the user asks about PII leaks, privacy exposure, or wants to see their Sonomos dashboard.
+user-invocable: true
 disable-model-invocation: true
 argument-hint: "[dashboard|stats|reset]"
 allowed-tools: Bash(python3 *) Bash(cat *) Bash(jq *) Bash(wc *) Bash(echo *) Bash(rm *)

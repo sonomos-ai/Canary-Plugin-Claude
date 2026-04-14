@@ -1,28 +1,23 @@
 {
-  "description": "Sonomos PII Leak Counter — persistent privacy awareness for Claude Code",
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/scan.sh\"",
-            "async": true,
-            "timeout": 30,
-            "statusMessage": "Sonomos: scanning for PII..."
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh\""
-          }
-        ]
-      }
-    ]
-  }
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/scan.sh\"",
+          "timeout": 30
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/session-start.sh\""
+        }
+      ]
+    }
+  ]
 }

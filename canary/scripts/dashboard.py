@@ -32,10 +32,14 @@ def load_leaks():
     return leaks
 
 def load_config():
+    default = {"llm_scan_enabled": True, "regex_enabled": True}
     if not os.path.exists(CONFIG_FILE):
-        return {"llm_scan_enabled": True, "regex_enabled": True}
-    with open(CONFIG_FILE) as f:
-        return json.loads(f.read())
+        return default
+    try:
+        with open(CONFIG_FILE) as f:
+            return json.loads(f.read())
+    except (json.JSONDecodeError, OSError):
+        return default
 
 def categorize_type(t):
     categories = {
