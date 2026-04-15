@@ -1,6 +1,6 @@
 ---
 name: scan
-description: Scan the current conversation for PII that regex may have missed. Detects names, addresses, legal IDs, medical records, trade secrets, crypto credentials, API tokens, and 70+ other semantic categories. Use when the user asks to scan for PII, check privacy exposure, or after sensitive work.
+description: Deep-scan the full conversation history for PII. Automatic scanning covers only the most recent message — use this for thorough audits of the entire session. Detects names, addresses, legal IDs, medical records, trade secrets, crypto credentials, API tokens, and 70+ other semantic categories.
 disable-model-invocation: false
 user-invocable: true
 argument-hint: "[full|quick]"

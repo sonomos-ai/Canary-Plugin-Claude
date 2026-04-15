@@ -21,7 +21,7 @@ def load_leaks():
     if not os.path.exists(LEAKS_FILE):
         return []
     leaks = []
-    with open(LEAKS_FILE) as f:
+    with open(LEAKS_FILE, encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if line:
@@ -36,7 +36,7 @@ def load_config():
     if not os.path.exists(CONFIG_FILE):
         return default
     try:
-        with open(CONFIG_FILE) as f:
+        with open(CONFIG_FILE, encoding='utf-8') as f:
             return json.loads(f.read())
     except (json.JSONDecodeError, OSError):
         return default
@@ -100,11 +100,11 @@ def generate_html(leaks, config):
     # Top types (for bar chart)
     top_types = type_counts.most_common(12)
 
-    # Category colors
+    # Category colors — pastel green + dark gray palette
     cat_colors = {
-        "Identity": "#e74c3c", "Financial": "#e67e22", "Crypto": "#8e44ad",
-        "Legal": "#5b6abf", "Medical": "#d35498", "Technical": "#16a085",
-        "Network": "#27ae60", "Organizational": "#e67e22", "Other": "#7f8c8d"
+        "Identity": "#1a1a1f", "Financial": "#3a5c48", "Crypto": "#4e6e5c",
+        "Legal": "#2c2c32", "Medical": "#6dcf97", "Technical": "#5a9e78",
+        "Network": "#a8e6c3", "Organizational": "#3a3a42", "Other": "#8b8f96"
     }
 
     # JSON data for JS
@@ -243,7 +243,7 @@ def generate_html(leaks, config):
     font-weight: 700;
     color: var(--dark);
   }}
-  .stat-value.warn {{ color: var(--danger); }}
+  .stat-value.warn {{ color: var(--dark); }}
   .stat-label {{
     font-size: 11px;
     color: var(--text-dim);
@@ -397,11 +397,11 @@ def generate_html(leaks, config):
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }}
-  .badge-high {{ background: #fdeaea; color: #c0392b; }}
-  .badge-medium {{ background: #fef4e0; color: #b8860b; }}
-  .badge-low {{ background: #f0f1f3; color: #7f8c8d; }}
-  .badge-regex {{ background: #e0f5f1; color: #0e8a6d; }}
-  .badge-llm {{ background: #ece5f8; color: #6c3fad; }}
+  .badge-high {{ background: var(--dark); color: #fff; }}
+  .badge-medium {{ background: var(--surface2); color: var(--text-secondary); }}
+  .badge-low {{ background: var(--surface); color: var(--text-dim); }}
+  .badge-regex {{ background: var(--accent-subtle); color: #2a7d52; }}
+  .badge-llm {{ background: var(--surface2); color: var(--dark); }}
 
   .mono {{
     font-family: 'JetBrains Mono', monospace;
@@ -412,8 +412,8 @@ def generate_html(leaks, config):
   /* ── LLM Warning ────────────────────────────────── */
 
   .llm-warning {{
-    background: #fef8ed;
-    border: 1px solid #f0ddb8;
+    background: var(--accent-subtle);
+    border: 1px solid var(--accent);
     border-radius: 10px;
     padding: 16px 22px;
     margin-bottom: 28px;
@@ -542,7 +542,7 @@ def generate_html(leaks, config):
         </div>
         <div class="bar-row">
           <div class="bar-label">Semantic</div>
-          <div class="bar" style="width:{llm_count*100/max(total,1):.0f}%;background:#8e7cc3"></div>
+          <div class="bar" style="width:{llm_count*100/max(total,1):.0f}%;background:var(--dark)"></div>
           <div class="bar-count">{llm_count}</div>
         </div>
       </div>
@@ -565,7 +565,7 @@ def generate_html(leaks, config):
 </div>
 
 <div class="footer">
-  <a href="https://sonomos.ai">SONOMOS</a> &nbsp;&middot;&nbsp; Copyright &copy; 2026 Sonomos, Inc.
+  <a href="https://sonomos.ai">SONOMOS</a> &nbsp;&middot;&nbsp; Copyright &copy; 2026 SONOMOS, Inc.
 </div>
 
 <script>
@@ -614,7 +614,7 @@ def main():
     html = generate_html(leaks, config)
 
     os.makedirs(SONOMOS_DIR, exist_ok=True)
-    with open(OUTPUT_FILE, 'w') as f:
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
 
     # Try to open, but don't fail if headless

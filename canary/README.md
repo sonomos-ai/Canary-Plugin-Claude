@@ -18,16 +18,17 @@ The number only goes up.
 ```
 You type a message → Claude processes it → Stop hook fires (async)
                                                │
-                                          Regex Detectors
-                                          (16 patterns, checksums)
+                                     ┌─────────┴─────────┐
+                                Regex Detectors      LLM Self-Scan
+                              (16 patterns, checksums)  (70+ categories)
+                                     └─────────┬─────────┘
                                                │
                                     Append to ~/.sonomos/leaks.jsonl
                                                │
                            Next session start → counter displayed
 
-On-demand:  /canary:scan  →  Claude reads its own conversation
-                              and scans for 70+ semantic PII
-                              categories. No API key. Zero cost.
+Deep scan:  /canary:scan  →  Claude scans full conversation history
+                              (automatic scan covers latest message only)
 ```
 
 ### Detection
@@ -35,8 +36,8 @@ On-demand:  /canary:scan  →  Claude reads its own conversation
 **Regex (automatic, every task, ~10ms):**
 16 detectors with checksum validation — Luhn (credit cards), MOD-97 (IBAN), ABA routing checksums, Base58Check (Bitcoin), EIP-55 (Ethereum), MOD-11 (VIN), SSA exclusion rules (SSN).
 
-**Claude Self-Scan (on-demand, zero cost):**
-Run `/canary:scan` and Claude reviews its own conversation for 70+ semantic categories — names, addresses, legal IDs, medical records, trade secrets, crypto seed phrases, organizational data, and more.
+**Claude Self-Scan (automatic, zero cost):**
+Claude scans each new user message for 70+ semantic categories — names, addresses, legal IDs, medical records, trade secrets, crypto seed phrases, organizational data, and more. Run `/canary:scan` for a deep scan of the full conversation history.
 
 ## Commands
 
@@ -44,7 +45,7 @@ Run `/canary:scan` and Claude reviews its own conversation for 70+ semantic cate
 |---------|-------------|
 | `/canary:leaked` | Open interactive HTML dashboard |
 | `/canary:leaked stats` | Print text summary |
-| `/canary:scan` | Claude scans its own conversation for semantic PII |
+| `/canary:scan` | Deep scan of full conversation history |
 | `/canary:leaked reset` | Clear all data (with confirmation) |
 
 ## Persistent Counter
