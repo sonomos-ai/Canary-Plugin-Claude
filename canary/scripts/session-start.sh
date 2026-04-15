@@ -35,15 +35,15 @@ Sonomos is now monitoring your conversations for PII exposure.
 
   ✓ Regex:  16 detectors run silently after every task
             (credit cards, SSNs, emails, crypto addresses, ...)
-  ✓ LLM:   /canary:scan — Claude scans its own conversation
-            for 70+ semantic PII categories (names, addresses,
-            legal IDs, medical records, trade secrets, ...)
+  ✓ LLM:   70+ semantic PII categories scanned automatically
+            after every task (names, addresses, legal IDs,
+            medical records, trade secrets, ...)
             No API key needed. Zero extra cost.
 
 Commands:
   /canary:leaked           Open interactive dashboard
   /canary:leaked stats     Quick text summary
-  /canary:scan             Deep LLM scan of current conversation
+  /canary:scan             Deep scan of full conversation history
   /canary:leaked reset     Clear all data
 
 Persistent counter:
@@ -78,7 +78,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
   across ${SESSIONS} session(s) | ${HIGH_CONF} high-confidence
   regex: ${REGEX_COUNT} | claude self-scan: ${LLM_COUNT}
 ${BREAKDOWN}
-  /canary:leaked → dashboard | /canary:scan → deep scan
+  /canary:leaked → dashboard | /canary:scan → full conversation scan
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exit 0

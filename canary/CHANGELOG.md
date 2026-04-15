@@ -2,6 +2,20 @@
 
 All notable changes to the Sonomos Canary plugin are documented here.
 
+## [1.2.0] - 2026-04-14
+
+### Fixed
+- hooks.json: Added required `"hooks"` wrapper key (fixes hook loading failure in v1.1.0)
+
+### Added
+- Automatic LLM semantic scanning on every Stop hook (previously required manual `/canary:scan`)
+- Defense-in-depth `llm_scan_enabled` gating in `record-llm-hit.sh`
+
+### Changed
+- LLM scan is now automatic (runs on every Stop alongside regex); `/canary:scan` remains for deep full-conversation audits
+- Updated session-start welcome message to reflect automatic LLM scanning
+- Updated skill descriptions to reflect new automatic behavior
+
 ## [1.1.0] - 2026-04-14
 
 ### Added

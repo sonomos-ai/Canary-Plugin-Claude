@@ -67,7 +67,7 @@ echo "Leak counter reset to 0."
 ## Detection Architecture
 
 - **Regex (automatic):** 16 detectors with checksum validation run silently on every Stop hook. Catches structured PII: credit cards, SSNs, emails, IBANs, crypto addresses, AWS keys, VINs, phone numbers, etc.
-- **Claude self-scan (on-demand):** Run `/canary:scan` to have Claude review its own conversation for 70+ semantic categories: names, addresses, legal IDs, medical records, trade secrets, API tokens, and more. No API key needed — Claude is the detector.
+- **Claude self-scan (automatic):** Claude scans each new user message for 70+ semantic categories on every Stop hook: names, addresses, legal IDs, medical records, trade secrets, API tokens, and more. Run `/canary:scan` for a deeper scan of the full conversation. No API key needed — Claude is the detector.
 
 Never display raw PII values. Always show the redacted `value` field from the leaks file.
 

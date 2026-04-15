@@ -12,6 +12,12 @@ TYPE="${1:-unknown}"
 VALUE="${2:-••••}"
 CONFIDENCE="${3:-high}"
 
+# Respect llm_scan_enabled userConfig (defense-in-depth)
+LLM_ENABLED="${CLAUDE_PLUGIN_OPTION_LLM_SCAN_ENABLED:-true}"
+if [[ "$LLM_ENABLED" == "false" || "$LLM_ENABLED" == "0" ]]; then
+  exit 0
+fi
+
 SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 CONFIDENCE_THRESHOLD="${CLAUDE_PLUGIN_OPTION_CONFIDENCE_THRESHOLD:-medium}"
