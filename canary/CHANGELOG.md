@@ -2,6 +2,24 @@
 
 All notable changes to the Sonomos Canary plugin are documented here.
 
+## [1.3.0] - 2026-04-15
+
+### Added
+- Rich multi-line HUD replacing the single-line PII counter
+- Session-specific detection delta (▲N) showing detections in the current session
+- Type diversity count (distinct PII categories detected)
+- Last detection relative timestamp (e.g., "3m ago")
+- Detection method breakdown (regex/llm/file counts)
+- Top 3 exposure categories with hit counts
+- Dashboard file link in HUD (path when generated, command hint otherwise)
+- Skill shortcut references (/canary:leaked, /canary:scan) in HUD footer
+
+### Changed
+- statusline.sh: rewritten as a 5-line bordered HUD with ANSI color-coding
+- session-start.sh: now syncs statusline script on every session (not just first run)
+- session-start.sh: updated welcome message with HUD setup instructions
+- session-start.sh: returning-user summary uses new bordered layout with dashboard link
+
 ## [1.2.0] - 2026-04-14
 
 ### Fixed
