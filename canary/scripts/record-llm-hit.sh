@@ -31,4 +31,14 @@ mkdir -p "$SONOMOS_DIR"
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-echo "{\"type\":\"${TYPE}\",\"value\":\"${VALUE}\",\"detector\":\"llm\",\"confidence\":\"${CONFIDENCE}\",\"timestamp\":\"${TIMESTAMP}\",\"session_id\":\"current\"}" >> "$LEAKS_FILE"
+# Use real session_id persisted by session-start.sh, fall back to "current"
+SESSION_ID="current"
+if [[ -f "$SONOMOS_DIR/.current_session_id" ]]; then
+  SESSION_ID=$(cat "$SONOMOS_DIR/.current_session_id" 2>/dev/null || echo "current")
+  [[ -z "$SESSION_ID" ]] && SESSION_ID="current"
+fi
+
+echo "{\"type\":\"${TYPE}\",\"value\":\"${VALUE}\",\"detector\":\"llm\",\"confidence\":\"${CONFIDENCE}\",\"timestamp\":\"${TIMESTAMP}\",\"session_id\":\"${SESSION_ID}\"}" >> "$LEAKS_FILE"
+
+# Update HUD last-scan timestamp (epoch for fast relative-time display)
+date +%s > "$SONOMOS_DIR/.last_scan" 2>/dev/null || true

@@ -3,19 +3,40 @@
 # All rights reserved.
 #
 # session-start.sh — Prints PII counter summary on every session start.
-# Output goes to stdout → injected as context visible to Claude and user.
+# Also stores session baseline for the HUD's "+N this session" counter,
+# persists the session_id for accurate LLM-hit tracking, and copies
+# the statusline script to ~/.sonomos for persistent access.
 
 set -euo pipefail
-
-# Drain stdin (Claude Code pipes hook JSON data that we don't need)
-cat > /dev/null &
 
 SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 
 mkdir -p "$SONOMOS_DIR"
 
-# First run: install statusline script and show welcome
+# ── Parse stdin for session context ──────────────────────────
+# Claude Code pipes hook JSON; we extract session_id for tracking.
+INPUT=$(cat 2>/dev/null || true)
+SESSION_ID=""
+if [[ -n "$INPUT" ]]; then
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)
+fi
+
+# Persist session_id so record-llm-hit.sh can use the real ID
+if [[ -n "$SESSION_ID" ]]; then
+  echo "$SESSION_ID" > "$SONOMOS_DIR/.current_session_id"
+fi
+
+# ── Store HUD session baseline ───────────────────────────────
+# Current PII total at session start. The statusline computes
+# "+N session" as (current_total - baseline).
+if [[ -f "$LEAKS_FILE" && -s "$LEAKS_FILE" ]]; then
+  wc -l < "$LEAKS_FILE" | tr -d ' ' > "$SONOMOS_DIR/.hud_session_baseline"
+else
+  echo 0 > "$SONOMOS_DIR/.hud_session_baseline"
+fi
+
+# ── First run: install statusline and show welcome ───────────
 if [[ ! -f "$SONOMOS_DIR/.initialized" ]]; then
   touch "$SONOMOS_DIR/.initialized"
 
@@ -46,14 +67,20 @@ Commands:
   /canary:scan             Deep scan of full conversation history
   /canary:leaked reset     Clear all data
 
-Persistent counter:
-  Add to ~/.claude/settings.json to always see your PII count:
+HUD (status bar):
+  A persistent 2-line HUD shows live PII metrics below your prompt.
+  Add to ~/.claude/settings.json to enable:
   "statusLine": {"type":"command","command":"bash ${SONOMOS_DIR}/statusline.sh"}
+
+  The HUD shows: PII count + severity bar, detection breakdown,
+  protection status, dashboard link, scan recency, and git branch.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WELCOME
   exit 0
 fi
+
+# ── Subsequent sessions: print counter summary ───────────────
 
 # No leaks yet
 if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then

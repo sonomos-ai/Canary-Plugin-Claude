@@ -78,4 +78,7 @@ if [[ -n "$HITS" ]]; then
   done
 fi
 
+# Update HUD last-scan timestamp (epoch for fast relative-time display)
+date +%s > "$SONOMOS_DIR/.last_scan" 2>/dev/null || true
+
 exit 0
