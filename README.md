@@ -20,21 +20,15 @@ A persistent sensitive data exposure counter for Claude Code. Tracks every piece
 
 - **16 regex detectors** with checksum validation (Luhn, MOD-97, ABA, Base58Check, EIP-55, MOD-11, SSA exclusion rules)
 - **70+ semantic categories** via Claude self-scan — no API key
-- **Persistent terminal counter** — always visible in your statusline
+- **Rich HUD** — multi-line statusline with live PII counter, breakdown, and dashboard link
 - **Interactive HTML dashboard** — category breakdown, timeline, detection details
 
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🐤 Canary: 142 PII items exposed
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  across 31 session(s) | 89 high-confidence
-  regex: 97 | claude self-scan: 45
-  email                  23
-  phone_number           18
-  name                   15
-  ...
-  /canary:leaked → dashboard | /canary:scan → deep scan
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━ 🐤 CANARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 142 PII (89 high) │ ▲12 session │ 15 types │ last: 3m ago
+ regex:97 · llm:45 │ top: email(23) phone_number(18) name(15)
+ 📊 ~/.sonomos/dashboard.html │ /canary:leaked · /canary:scan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
 | Command | Description |

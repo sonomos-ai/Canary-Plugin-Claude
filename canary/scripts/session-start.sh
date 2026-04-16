@@ -4,6 +4,7 @@
 #
 # session-start.sh — Prints PII counter summary on every session start.
 # Output goes to stdout → injected as context visible to Claude and user.
+# Also installs the HUD statusline script to ~/.sonomos/ for persistence.
 
 set -euo pipefail
 
@@ -15,70 +16,86 @@ LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 
 mkdir -p "$SONOMOS_DIR"
 
-# First run: install statusline script and show welcome
+# Always keep statusline script up to date
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/statusline.sh" ]]; then
+  cp "$SCRIPT_DIR/statusline.sh" "$SONOMOS_DIR/statusline.sh"
+  chmod +x "$SONOMOS_DIR/statusline.sh"
+fi
+
+# First run: show welcome
 if [[ ! -f "$SONOMOS_DIR/.initialized" ]]; then
   touch "$SONOMOS_DIR/.initialized"
 
-  # Copy statusline script to persistent location
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [[ -f "$SCRIPT_DIR/statusline.sh" ]]; then
-    cp "$SCRIPT_DIR/statusline.sh" "$SONOMOS_DIR/statusline.sh"
-    chmod +x "$SONOMOS_DIR/statusline.sh"
-  fi
-
   cat << WELCOME
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🐤 SONOMOS CANARY — Installed
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━ 🐤 CANARY — Installed ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Sonomos is now monitoring your conversations for PII exposure.
 
-  ✓ Regex:  16 detectors run silently after every task
+  Detectors:
+  ✓ Regex:  16 detectors with checksum validation
             (credit cards, SSNs, emails, crypto addresses, ...)
-  ✓ LLM:   70+ semantic PII categories scanned automatically
-            after every task (names, addresses, legal IDs,
-            medical records, trade secrets, ...)
+  ✓ LLM:   70+ semantic categories scanned automatically
+            (names, addresses, legal IDs, medical records, ...)
             No API key needed. Zero extra cost.
 
-Commands:
+  Commands:
   /canary:leaked           Open interactive dashboard
   /canary:leaked stats     Quick text summary
-  /canary:scan             Deep scan of full conversation history
+  /canary:scan             Deep scan of full conversation
   /canary:leaked reset     Clear all data
 
-Persistent counter:
-  Add to ~/.claude/settings.json to always see your PII count:
+  HUD (always-visible status bar):
+  Add to ~/.claude/settings.json:
   "statusLine": {"type":"command","command":"bash ${SONOMOS_DIR}/statusline.sh"}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  The HUD shows your live PII counter, detection breakdown,
+  top exposure categories, dashboard link, and more — all
+  updating in real time below the input line.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WELCOME
   exit 0
 fi
 
 # No leaks yet
 if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then
-  echo "◆ Sonomos: 0 PII items detected. Clean so far."
+  echo "━━━ 🐤 CANARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  0 PII items detected. Clean so far."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   exit 0
 fi
 
-# Aggregate stats
-TOTAL=$(wc -l < "$LEAKS_FILE")
-SESSIONS=$(jq -r '.session_id' "$LEAKS_FILE" 2>/dev/null | sort -u | wc -l)
+# ── Aggregate stats ────────────────────────────────────────────
+TOTAL=$(wc -l < "$LEAKS_FILE" | tr -d ' ')
+SESSIONS=$(jq -r '.session_id' "$LEAKS_FILE" 2>/dev/null | sort -u | wc -l | tr -d ' ')
+HIGH_CONF=$(jq -r 'select(.confidence == "high") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+REGEX_COUNT=$(jq -r 'select(.detector == "regex") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+LLM_COUNT=$(jq -r 'select(.detector == "llm") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
 
 BREAKDOWN=$(jq -r '.type' "$LEAKS_FILE" 2>/dev/null | sort | uniq -c | sort -rn | head -8 | \
-  awk '{printf "  %-22s %d\n", $2, $1}')
+  awk '{printf "    %-22s %d\n", $2, $1}')
 
-HIGH_CONF=$(jq -r 'select(.confidence == "high") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
-REGEX_COUNT=$(jq -r 'select(.detector == "regex") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
-LLM_COUNT=$(jq -r 'select(.detector == "llm") | .type' "$LEAKS_FILE" 2>/dev/null | wc -l)
+NUM_TYPES=$(jq -r '.type' "$LEAKS_FILE" 2>/dev/null | sort -u | wc -l | tr -d ' ')
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  🐤 Canary: ${TOTAL} PII items exposed
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  across ${SESSIONS} session(s) | ${HIGH_CONF} high-confidence
-  regex: ${REGEX_COUNT} | claude self-scan: ${LLM_COUNT}
-${BREAKDOWN}
-  /canary:leaked → dashboard | /canary:scan → full conversation scan
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+# Dashboard status
+DASH_STATUS=""
+if [[ -f "$SONOMOS_DIR/dashboard.html" ]]; then
+  DASH_STATUS="📊 dashboard: ~/.sonomos/dashboard.html"
+else
+  DASH_STATUS="📊 /canary:leaked → generate dashboard"
+fi
+
+echo "━━━ 🐤 CANARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  ${TOTAL} PII items exposed"
+echo "  across ${SESSIONS} session(s) │ ${HIGH_CONF} high-confidence │ ${NUM_TYPES} types"
+echo "  regex: ${REGEX_COUNT} │ llm: ${LLM_COUNT}"
+echo ""
+echo "  Top categories:"
+echo "${BREAKDOWN}"
+echo ""
+echo "  ${DASH_STATUS}"
+echo "  /canary:leaked → dashboard │ /canary:scan → deep audit"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exit 0
