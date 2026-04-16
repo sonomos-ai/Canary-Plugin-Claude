@@ -1,4 +1,4 @@
-# 🐤 Canary
+# 🐤 CANARY
 
 **You have no idea how much PII you've fed to Claude. Canary counts it for you.**
 
