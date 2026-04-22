@@ -1,16 +1,14 @@
-# 🐤 CANARY
+<p align="center">
+  <img src="images/Canaryreadme.png" style="max-width:100%; height:auto;" />
+</p>
+
+# CANARY
 
 **You have no idea how much PII you've fed to Claude. Canary counts it for you.**
 
 Canary is a privacy plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) by [Sonomos](https://sonomos.ai). It monitors every conversation for sensitive data exposure and keeps a persistent, running tally across all sessions. The number only goes up.
 
 Every time you paste code, logs, configs, stack traces, or messages into Claude Code, there's a chance you're leaking API keys, email addresses, phone numbers, SSNs, credit card numbers, crypto wallets, and dozens of other PII categories without realizing it. Canary catches them in real time and makes the count impossible to ignore.
-
-━━━ 🐤 CANARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-142 PII (89 high) │ ▲12 session │ 15 types │ last: 3m ago
-regex:97 · llm:45 │ top: email(23) phone_number(18) name(15)
-📊 ~/.sonomos/dashboard.html │ /canary:leaked · /canary:scan
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## Install
 
