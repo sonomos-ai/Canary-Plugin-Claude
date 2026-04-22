@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/Canaryreadme.png" style="max-width:100%; height:auto;" />
+  <img src="images/Canary-readme.png" style="max-width:100%; height:auto;" />
 </p>
 
 # CANARY
