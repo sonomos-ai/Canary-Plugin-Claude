@@ -1,0 +1,39 @@
+name: New Detector Request
+description: Request a new PII detection pattern
+labels: ["new-detector"]
+body:
+  - type: input
+    id: pii_type
+    attributes:
+      label: PII type
+      description: What type of sensitive data should be detected?
+      placeholder: "e.g., Canadian SIN, UK NI number, SWIFT code"
+    validations:
+      required: true
+  - type: textarea
+    id: format
+    attributes:
+      label: Format description
+      description: Describe the format. Include example values (use fake/test data only).
+      value: |
+        Format: ...
+        Example: ...
+        Validation: ...
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: Detection method
+      description: Should this be regex (structured pattern) or semantic (contextual)?
+      options:
+        - Regex (has a fixed pattern or checksum)
+        - Semantic (requires understanding context)
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: false_positives
+    attributes:
+      label: Known false positive risks
+      description: What legitimate data could look like this PII type?
