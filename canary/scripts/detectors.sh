@@ -188,7 +188,8 @@ done < <(echo "$TEXT" | pgrep_o '\b[A-Z]{2}\d{2}[ ]?[\dA-Z]{4}[ ]?[\dA-Z]{4}[ ]?
 # ── 4. IPv4 Addresses ───────────────────────────────────────────────
 while IFS= read -r match; do
   # Exclude common non-PII IPs (localhost, broadcast, documentation ranges)
-  if [[ ! "$match" =~ ^(127\.|0\.|255\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|224\.|169\.254\.) ]]; then
+  # Exclude non-PII: private, loopback, link-local, multicast, broadcast, documentation
+  if [[ ! "$match" =~ ^(127\.|0\.|255\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|224\.|225\.|226\.|227\.|228\.|229\.|23[0-9]\.|24[0-9]\.|25[0-4]\.|169\.254\.|198\.51\.100\.|203\.0\.113\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.) ]] && [[ "$match" != "255.255.255.255" ]]; then
     echo "{\"type\":\"ipv4\",\"value\":\"$(redact "$match")\",\"detector\":\"regex\",\"confidence\":\"medium\"}"
   fi
 done < <(echo "$TEXT" | pgrep_o '\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b')

@@ -74,24 +74,32 @@ All data is local at `~/.sonomos/`:
 | `statusline.sh` | Counter script (copied on first run) |
 | `.cursor_*` | Scan cursors per transcript |
 
-**Privacy:** Values are redacted at detection time. Raw PII is never stored.
+**Privacy:** Values are redacted at detection time using a "first 2 + last 2" rule — the middle characters are replaced with bullet points. For example, `4532015112830366` becomes `45••••••••••••66`. Values of 5 characters or fewer are fully masked as `••••`. Raw PII is never stored. All files are created with `0700`/`0600` permissions (owner-only access).
 
 ## Plugin Structure
 
 ```
 canary/
-├── .claude-plugin/plugin.json
-├── hooks/hooks.json
+├── .claude-plugin/plugin.json       # Plugin manifest
+├── hooks/hooks.json                 # Stop, PostToolUse, SessionStart hooks
 ├── scripts/
-│   ├── scan.sh
-│   ├── detectors.sh
-│   ├── session-start.sh
-│   ├── statusline.sh
-│   └── dashboard.py
+│   ├── detectors.sh                 # 16 regex detectors with checksum validation
+│   ├── scan.sh                      # Stop hook: regex scan on new messages
+│   ├── scan-file.sh                 # PostToolUse hook: scan written/edited files
+│   ├── session-start.sh             # SessionStart hook: welcome + summary
+│   ├── statusline.sh                # Rich HUD for status bar
+│   ├── record-llm-hit.sh           # Record LLM-detected hits safely (jq)
+│   └── dashboard.py                 # Interactive HTML dashboard generator
 ├── skills/
-│   ├── leaked/SKILL.md
-│   └── scan/SKILL.md
+│   ├── leaked/SKILL.md              # /canary:leaked — dashboard, stats, reset
+│   └── scan/SKILL.md               # /canary:scan — deep conversation scan
+├── agents/
+│   └── pii-audit.md                 # Cross-session PII audit agent
+├── bin/
+│   ├── canary-stats                 # CLI: quick PII summary
+│   └── canary-export                # CLI: export to CSV/JSON
 ├── README.md
+├── CHANGELOG.md
 └── LICENSE
 ```
 

@@ -8,6 +8,8 @@
 
 set -euo pipefail
 
+umask 0077
+
 SONOMOS_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.sonomos}"
 LEAKS_FILE="$SONOMOS_DIR/leaks.jsonl"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,6 +25,11 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 if [[ -z "$FILE_PATH" || ! -f "$FILE_PATH" ]]; then
   exit 0
 fi
+
+# Reject paths containing traversal sequences
+case "$FILE_PATH" in
+  *../*|*/..*) exit 0 ;;
+esac
 
 # Skip binary files and large files (>100KB)
 FILE_SIZE=$(wc -c < "$FILE_PATH" 2>/dev/null || echo 0)

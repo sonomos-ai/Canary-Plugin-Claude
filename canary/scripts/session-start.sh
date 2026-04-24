@@ -7,6 +7,7 @@
 # Also installs the HUD statusline script to ~/.sonomos/ for persistence.
 
 set -euo pipefail
+umask 0077
 
 # Drain stdin (Claude Code pipes hook JSON data that we don't need)
 cat > /dev/null &

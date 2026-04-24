@@ -89,7 +89,9 @@ assert_detects "URL with password" "https://admin:secret123@db.example.com" "url
 
 echo ""
 echo "=== IPv4 Detectors ==="
-assert_detects "Public IPv4" "203.0.113.42" "ipv4"
+# 203.0.113.x is RFC 5737 TEST-NET-3 (documentation range) — correctly excluded.
+# Use an actual public IP for the positive test.
+assert_detects "Public IPv4" "8.8.8.8" "ipv4"
 assert_no_detect "Private IPv4 (192.168)" "192.168.1.1"
 assert_no_detect "Localhost" "127.0.0.1"
 

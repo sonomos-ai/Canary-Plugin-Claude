@@ -27,8 +27,16 @@ if [[ "$CONFIDENCE_THRESHOLD" == "high" && "$CONFIDENCE" != "high" ]]; then
   exit 0
 fi
 
+umask 0077
 mkdir -p "$SONOMOS_DIR"
 
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-echo "{\"type\":\"${TYPE}\",\"value\":\"${VALUE}\",\"detector\":\"llm\",\"confidence\":\"${CONFIDENCE}\",\"timestamp\":\"${TIMESTAMP}\",\"session_id\":\"current\"}" >> "$LEAKS_FILE"
+# Use jq for safe JSON construction — prevents injection from
+# values containing quotes, backslashes, or control characters.
+jq -n -c \
+  --arg type "$TYPE" \
+  --arg value "$VALUE" \
+  --arg confidence "$CONFIDENCE" \
+  --arg timestamp "$TIMESTAMP" \
+  '{type: $type, value: $value, detector: "llm", confidence: $confidence, timestamp: $timestamp, session_id: "current"}' >> "$LEAKS_FILE"
