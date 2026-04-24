@@ -15,6 +15,7 @@
 
 <p align="center">
   Canary is a privacy plugin for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> that counts every piece of sensitive data you expose across all sessions.<br/>
+  
   Credit cards. SSNs. API keys. Emails. Medical records. Crypto wallets. Names. Addresses.<br/><br/>
   <strong>The number only goes up.</strong>
 </p>
