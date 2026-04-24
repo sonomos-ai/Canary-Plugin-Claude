@@ -1,71 +1,130 @@
 <p align="center">
-  <img src="images/Canary-readme.png" style="max-width:100%; height:auto;" />
+  <img src="images/Canary-readme.png" alt="Canary by Sonomos" width="480" />
 </p>
 
-# CANARY
+<p align="center">
+  <strong>You have no idea how much PII you've fed to Claude.</strong>
+</p>
 
-**You have no idea how much PII you've fed to Claude. Canary counts it for you.**
+<p align="center">
+  <a href="https://github.com/sonomos-ai/Canary/actions"><img src="https://github.com/sonomos-ai/Canary/actions/workflows/validate.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License" /></a>
+  <a href="https://github.com/sonomos-ai/Canary/releases"><img src="https://img.shields.io/badge/version-1.3.0-blue" alt="Version" /></a>
+  <a href="https://docs.anthropic.com/en/docs/claude-code"><img src="https://img.shields.io/badge/Claude_Code-plugin-8B5CF6" alt="Claude Code Plugin" /></a>
+</p>
 
-Canary is a privacy plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) by [Sonomos](https://sonomos.ai). It monitors every conversation for sensitive data exposure and keeps a persistent, running tally across all sessions. The number only goes up.
+<p align="center">
+  Canary is a privacy plugin for <a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code</a> that counts every piece of sensitive data you expose across all sessions.<br/>
+  Credit cards. SSNs. API keys. Emails. Medical records. Crypto wallets. Names. Addresses.<br/><br/>
+  <strong>The number only goes up.</strong>
+</p>
 
-Every time you paste code, logs, configs, stack traces, or messages into Claude Code, there's a chance you're leaking API keys, email addresses, phone numbers, SSNs, credit card numbers, crypto wallets, and dozens of other PII categories without realizing it. Canary catches them in real time and makes the count impossible to ignore.
+---
 
 ## Install
 
 ```bash
-# Add the Sonomos marketplace
 /plugin marketplace add sonomos-ai/Canary-Plugin
-
-# Install Canary
 /plugin install canary@sonomos
 ```
 
-That's it. No API keys. No external services. Everything runs locally.
+No API keys. No external services. No config. Two commands and you're running.
 
-## What It Detects
+---
 
-### Regex Engine (16 detectors)
+## What Gets Caught
 
-Pattern-matched detection with real checksum validation, not just "looks like a number." Canary validates against Luhn (credit cards), MOD-97 (IBANs), ABA (routing numbers), Base58Check (Bitcoin addresses), EIP-55 (Ethereum addresses), MOD-11 (various ID formats), and SSA exclusion rules (Social Security numbers).
+<table>
+<tr>
+<td width="50%">
 
-Covers credit card numbers, SSNs, phone numbers, email addresses, IP addresses, API keys, AWS credentials, crypto wallets, IBANs, routing numbers, passport numbers, and more.
+**16 Regex Detectors** (every message, ~10ms)
 
-### Semantic Scan (70+ categories)
+Real checksum validation, not just pattern matching:
 
-Claude scans its own conversation history for PII that regex can't catch: names, addresses, dates of birth, medical information, legal case details, financial data, employment history, and dozens of other contextual categories. No external API call required. Claude is the model doing the scanning.
+- Credit cards (Luhn)
+- SSNs (SSA exclusion rules)
+- IBANs (MOD-97)
+- Bitcoin addresses (Base58Check)
+- Ethereum addresses (EIP-55)
+- AWS access + secret keys
+- Phone numbers, emails, IPs
+- VINs (MOD-11), routing numbers (ABA)
+- Medicare MBIs, driver's licenses
+- URLs with embedded credentials
+
+</td>
+<td width="50%">
+
+**70+ Semantic Categories** (Claude self-scan)
+
+Claude scans its own context for PII that regex can't catch:
+
+- Names, dates of birth, addresses
+- Passport and national ID numbers
+- Medical records, health plan IDs, diagnoses
+- Legal case numbers, contracts, patents
+- Trade secrets, internal communications
+- Employee and customer data
+- Crypto seed phrases, private keys
+- OAuth tokens, JWTs, API secrets
+- Financial records, tax IDs
+- ...and 40+ more categories
+
+</td>
+</tr>
+</table>
+
+---
+
+## How It Works
+
+```
+You type a message
+       |
+       v
+Claude processes it ──> Stop hook fires (async, invisible)
+                              |
+                    ┌─────────┴─────────┐
+               Regex Detectors      Claude Self-Scan
+             (16 patterns + checksums)  (70+ categories)
+                    └─────────┬─────────┘
+                              v
+                   ~/.sonomos/leaks.jsonl
+                              |
+                 Session start ──> counter displayed
+```
+
+- **Automatic**: runs on every message and every file write/edit
+- **Local-only**: zero network requests, no telemetry, no external APIs
+- **Non-blocking**: detection runs async, never slows your workflow
+- **Persistent**: counter survives restarts, accumulates across all sessions
+
+---
 
 ## Commands
 
-| Command | Description |
+| Command | What it does |
 |---------|-------------|
 | `/canary:leaked` | Open the interactive HTML dashboard |
-| `/canary:leaked stats` | Print a text summary to the terminal |
-| `/canary:scan` | Trigger a Claude self-scan of the current conversation |
+| `/canary:leaked stats` | Print a text summary |
+| `/canary:scan` | Deep-scan the full conversation history |
 | `/canary:leaked reset` | Clear all detection data |
 
-### CLI Tools
+**CLI tools** (available in Bash):
 
-After installing, these are available in the Bash tool:
+```bash
+canary-stats          # quick summary
+canary-stats --json   # machine-readable
+canary-export --csv   # export all detections
+canary-export --json  # export as JSON array
+```
 
-| Command | Description |
-|---------|-------------|
-| `canary-stats` | Quick PII exposure summary |
-| `canary-stats --json` | Stats as JSON |
-| `canary-export` | Export all detections to CSV |
-| `canary-export --json` | Export as JSON array |
+---
 
-## The Dashboard
+## Persistent HUD
 
-Canary generates an interactive HTML dashboard at `~/.sonomos/dashboard.html` with:
-
-- Running PII count with severity breakdown (high / medium / low)
-- Category breakdown (which types of data you're leaking most)
-- Detection timeline (when exposure is happening)
-- Per-detection details (what was caught, which detector, when)
-
-## Persistent Statusline
-
-To keep Canary's counter visible in your Claude Code statusline across all sessions, add this to `~/.claude/settings.json`:
+Add to `~/.claude/settings.json` to keep the counter visible at all times:
 
 ```json
 {
@@ -76,56 +135,73 @@ To keep Canary's counter visible in your Claude Code statusline across all sessi
 }
 ```
 
-The statusline shows your total PII count, session delta, top categories, and a link to the dashboard. It updates in real time as you work.
+The HUD shows your total PII count, session delta, top categories, detector breakdown, and last detection time. Color-coded by severity: **green** (0) / **yellow** (<10) / **red** (10+).
 
-## Team Distribution
+---
 
-To auto-install Canary for every developer on your team, add this to your project's `.claude/settings.json`:
+## Team Rollout
+
+Drop this into your project's `.claude/settings.json` to auto-enable Canary for every developer:
 
 ```json
 {
   "extraKnownMarketplaces": {
     "sonomos": {
-      "source": {
-        "source": "github",
-        "repo": "sonomos-ai/Canary-Plugin"
-      }
+      "source": { "source": "github", "repo": "sonomos-ai/Canary-Plugin" }
     }
   },
-  "enabledPlugins": {
-    "canary@sonomos": true
-  }
+  "enabledPlugins": { "canary@sonomos": true }
 }
 ```
 
-Team members will be prompted to install the marketplace when they open the project. From there, Canary runs automatically.
+Commit it. Every team member gets prompted to install on their next session.
 
-## How It Works
+---
 
-Canary is built in Shell and Python. The regex engine runs locally via Bash scripts with validation logic for each detector type. The semantic scan leverages Claude's own context window to identify PII that pattern matching misses. All detection data is stored locally at `~/.sonomos/`. Nothing is transmitted externally. No telemetry. No analytics. No network requests.
-.claude-plugin/       # Plugin manifest and hook definitions
-canary/               # Core plugin code
-├── detectors/      # Regex detection engine (16 patterns + checksums)
-├── semantic/       # Claude self-scan prompt and parser
-├── dashboard/      # HTML dashboard generator
-└── statusline.sh   # Persistent statusline script
-tests/                # Test suite
-.github/workflows/    # CI
+## Privacy and Security
+
+- All data stays on your machine at `~/.sonomos/`
+- Values are **redacted at detection time** — first 2 and last 2 characters kept, middle replaced with `••`
+- Files created with owner-only permissions (`0700`/`0600`)
+- JSON output constructed with `jq` to prevent injection
+- File path validation blocks traversal attacks
+- No network requests. No telemetry. No analytics. Ever.
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+---
 
 ## Why This Exists
 
-Most developers don't know how much sensitive data they've shared with AI tools. The answer is almost always "more than you think." Canary makes that number visible and persistent. It doesn't block anything. It doesn't redact anything. It just counts, because you can't fix what you can't see.
+Most developers have no idea how much sensitive data they've shared with AI tools.
 
-Canary shows you what you've already exposed. If you want to prevent exposure before it happens, that's what the [Sonomos browser extension](https://sonomos.ai) does. It detects and masks PII in real time across Claude, ChatGPT, Gemini, Grok, and any other AI tool, before your data ever leaves the browser.
+The answer is almost always *more than you think*.
 
-## License
+Canary makes that number visible and persistent. It doesn't block anything. It doesn't redact anything. It just counts. Because you can't fix what you can't see.
 
-MIT
-
----
-
-Built by [Sonomos](https://sonomos.ai)
+**Canary shows you what you've already exposed.** If you want to prevent exposure before it happens, [Sonomos](https://sonomos.ai) detects and masks PII in real time before your data ever leaves your machine.
 
 ---
 
-Copyright © 2026 Sonomos, Inc. All rights reserved.
+## Contributing
+
+Found a bug? Want to add a detector? PRs welcome.
+
+```bash
+git clone https://github.com/sonomos-ai/Canary.git
+cd Canary
+bash tests/test-detectors.sh     # regex detector tests
+bash tests/test-checksums.sh     # checksum validation tests
+bash tests/test-redact.sh        # redaction tests
+bash tests/test-no-false-positives.sh  # false positive prevention
+```
+
+---
+
+<p align="center">
+  <a href="https://sonomos.ai"><strong>Sonomos</strong></a> &mdash; privacy engine for AI
+</p>
+
+<p align="center">
+  <sub>MIT License &copy; 2026 Sonomos, Inc.</sub>
+</p>
