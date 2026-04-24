@@ -60,39 +60,86 @@ if [[ ! -f "$LEAKS_FILE" || ! -s "$LEAKS_FILE" ]]; then
   exit 0
 fi
 
-# ── Gather stats (grep-first for speed) ────────────────────────
-# Note: grep -c outputs "0" even on no-match (exit 1), so use || true
-TOTAL=$(wc -l < "$LEAKS_FILE" | tr -d ' ')
-HIGH=$(grep -c '"confidence":"high"' "$LEAKS_FILE" 2>/dev/null || true)
-REGEX_CT=$(grep -c '"detector":"regex"' "$LEAKS_FILE" 2>/dev/null || true)
-LLM_CT=$(grep -c '"detector":"llm"' "$LEAKS_FILE" 2>/dev/null || true)
-FILE_CT=$(grep -c '"detector":"file"' "$LEAKS_FILE" 2>/dev/null || true)
+# ── Gather all stats in a single pass (fast for large files) ───
+# One awk invocation replaces 8+ grep calls over the same file.
+read -r TOTAL HIGH REGEX_CT LLM_CT FILE_CT SESS_CT NUM_TYPES LAST_TS TOP_TYPES_RAW <<< "$(
+  awk -v sid="$SESSION_ID" '
+  BEGIN { total=0; high=0; regex=0; llm=0; file=0; sess=0; last_ts="" }
+  {
+    total++
 
-# Ensure numeric (fallback to 0 if empty)
+    # confidence
+    if (index($0, "\"confidence\":\"high\"")) high++
+
+    # detector
+    if (index($0, "\"detector\":\"regex\"")) regex++
+    else if (index($0, "\"detector\":\"llm\"")) llm++
+    else if (index($0, "\"detector\":\"file\"")) file++
+
+    # session
+    if (sid != "" && index($0, "\"session_id\":\"" sid "\"")) sess++
+
+    # type — extract with simple string ops
+    ti = index($0, "\"type\":\"")
+    if (ti > 0) {
+      rest = substr($0, ti + 8)
+      te = index(rest, "\"")
+      if (te > 0) {
+        t = substr(rest, 1, te - 1)
+        types[t]++
+      }
+    }
+
+    # timestamp from last line (overwritten each line — final value wins)
+    tsi = index($0, "\"timestamp\":\"")
+    if (tsi > 0) {
+      rest2 = substr($0, tsi + 13)
+      tse = index(rest2, "\"")
+      if (tse > 0) last_ts = substr(rest2, 1, tse - 1)
+    }
+  }
+  END {
+    # Count distinct types
+    num_types = 0
+    for (t in types) num_types++
+
+    # Top 3 types by count (simple selection sort for 3 elements)
+    top = ""
+    for (pass = 1; pass <= 3; pass++) {
+      best = ""; best_ct = 0
+      for (t in types) {
+        if (types[t] > best_ct) { best = t; best_ct = types[t] }
+      }
+      if (best != "") {
+        if (top != "") top = top " "
+        top = top best "(" best_ct ")"
+        delete types[best]
+      }
+    }
+
+    printf "%d %d %d %d %d %d %d %s %s\n", \
+      total, high, regex, llm, file, sess, num_types, \
+      (last_ts != "" ? last_ts : "NONE"), \
+      (top != "" ? top : "NONE")
+  }
+  ' "$LEAKS_FILE" 2>/dev/null || echo "0 0 0 0 0 0 0 NONE NONE"
+)"
+
+# Parse top types (space-delimited from awk output, field 9+)
+TOP_TYPES=""
+if [[ "$TOP_TYPES_RAW" != "NONE" ]]; then
+  TOP_TYPES="$TOP_TYPES_RAW"
+fi
+[[ "$LAST_TS" == "NONE" ]] && LAST_TS=""
+
+# Ensure numeric
+TOTAL=${TOTAL:-0}
 HIGH=${HIGH:-0}
 REGEX_CT=${REGEX_CT:-0}
 LLM_CT=${LLM_CT:-0}
 FILE_CT=${FILE_CT:-0}
-
-# Session-specific count (if session_id available)
-SESS_CT=0
-if [[ -n "$SESSION_ID" ]]; then
-  SESS_CT=$(grep -c "\"session_id\":\"${SESSION_ID}\"" "$LEAKS_FILE" 2>/dev/null || true)
-  SESS_CT=${SESS_CT:-0}
-fi
-
-# Top 3 exposure categories
-TOP_TYPES=$(grep -o '"type":"[^"]*"' "$LEAKS_FILE" 2>/dev/null | \
-  sed 's/"type":"//;s/"//' | sort | uniq -c | sort -rn | head -3 | \
-  awk '{printf "%s(%d) ", $2, $1}' | sed 's/ $//' || true)
-
-# Number of distinct PII types
-NUM_TYPES=$(grep -o '"type":"[^"]*"' "$LEAKS_FILE" 2>/dev/null | sort -u | wc -l | tr -d ' ')
+SESS_CT=${SESS_CT:-0}
 NUM_TYPES=${NUM_TYPES:-0}
-
-# Last detection — relative time
-LAST_TS=$(tail -1 "$LEAKS_FILE" | grep -o '"timestamp":"[^"]*"' 2>/dev/null | \
-  sed 's/"timestamp":"//;s/"//' || true)
 LAST_AGO=""
 if [[ -n "$LAST_TS" ]]; then
   # GNU date (-d) first, macOS date (-j) fallback
