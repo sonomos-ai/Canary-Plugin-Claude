@@ -200,7 +200,7 @@ bash tests/test-no-false-positives.sh  # false positive prevention
 ---
 
 <p align="center">
-  <a href="https://sonomos.ai"><strong>Sonomos</strong></a> &mdash; privacy engine for AI
+  <a href="https://sonomos.ai"><strong>Sonomos</strong></a> &mdash; Privacy at the Point of Creation
 </p>
 
 <p align="center">
