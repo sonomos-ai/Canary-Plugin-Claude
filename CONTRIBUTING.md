@@ -57,4 +57,4 @@ All 4 suites must pass before submitting a PR.
 
 ## Security Issues
 
-Do not open a public issue. Email security@sonomos.ai. See [SECURITY.md](SECURITY.md).
+Do not open a public issue. Email info@sonomos.ai. See [SECURITY.md](SECURITY.md).
