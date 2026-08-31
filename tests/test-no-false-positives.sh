@@ -17,8 +17,14 @@ FAIL=0
 # a known-positive input — the Visa PAN test-detectors.sh already
 # asserts on — and refuse to go any further unless a hit comes back.
 # That covers a detector that is merely inert (exits 0, detects
-# nothing). Second, per call: assert_no_detect checks the exit status,
-# which covers a detector that dies part-way through the run.
+# nothing), which no per-call check can see. Second, per call: BOTH
+# assertions in this file that can pass on empty output — assert_no_detect
+# and assert_type_absent — check the exit status, which covers a detector
+# that dies on some inputs but not the control's (the liveness control
+# runs once, so it cannot see an input-specific crash).
+#
+# assert_confidence is not in that set: it requires a positive hit, so a
+# dead or inert detector fails it outright and no status check is needed.
 CONTROL_INPUT="4532015112830366"
 CONTROL_TYPE="credit_card"
 control_status=0
@@ -73,10 +79,19 @@ assert_type_absent() {
   local input="$2"
   local absent_type="$3"
 
+  # Same reasoning as assert_no_detect: this assertion passes when the
+  # type is missing from the output, and EMPTY output satisfies that, so
+  # a detector that died on this input would pass it vacuously. No
+  # `|| true` — check the status.
   local output
-  output=$(bash "$DETECTORS" "$input" 2>/dev/null || true)
+  local status=0
+  output=$(bash "$DETECTORS" "$input" 2>/dev/null) || status=$?
 
-  if echo "$output" | grep -q "\"type\":\"$absent_type\""; then
+  if [[ $status -ne 0 ]]; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $label (detector exited $status — it did not run, so an absent type is not a pass)"
+    echo "        input: $input"
+  elif echo "$output" | grep -q "\"type\":\"$absent_type\""; then
     FAIL=$((FAIL + 1))
     echo "  FAIL: $label (type '$absent_type' should not have appeared)"
     echo "        input: $input"
