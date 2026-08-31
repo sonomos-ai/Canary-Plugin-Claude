@@ -246,6 +246,22 @@
       "gold": [],
       "preserve": [ { "value": "EC1A1BB", "type": "uk_postcode", "reason": "unspaced postcode-shaped token with no address/postcode keyword nearby — the precision guard must keep it silent" } ],
       "expected_miss": false
+    },
+    {
+      "id": "prose-sin-canadian",
+      "surface": "prose",
+      "text": "For the CRA filing, my social insurance number is 130 692 544.",
+      "gold": [ { "value": "130 692 544", "type": "sin_canadian" } ],
+      "preserve": [],
+      "expected_miss": false
+    },
+    {
+      "id": "nearmiss-sin-bad-checksum",
+      "surface": "near-miss",
+      "text": "the batch reference 046-454-287 was rejected by the sin validator",
+      "gold": [],
+      "preserve": [ { "value": "046-454-287", "type": "sin_canadian", "reason": "SIN-shaped and keyword-adjacent, but the Luhn check digit is wrong — the checksum gate must keep it silent" } ],
+      "expected_miss": false
     }
   ]
 }
