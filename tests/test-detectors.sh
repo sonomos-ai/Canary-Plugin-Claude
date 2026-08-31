@@ -30,14 +30,36 @@ assert_detects() {
   fi
 }
 
+# The two assertions below are the only ones in this file that can be
+# satisfied by EMPTY detector output, so they are the only ones a broken
+# detectors.sh can pass without running: "found nothing" and "did not
+# run" look identical. Both therefore check the exit status instead of
+# swallowing it with `|| true`. detectors.sh always ends in `exit 0`, so
+# any non-zero status means it died (syntax error, missing dependency,
+# signal) and its silence proves nothing.
+#
+# Every other helper here requires a positive hit, so a dead detector
+# fails it without needing the status: assert_detects and
+# assert_confidence both grep for a type that must be present, and both
+# assert_hit_count call sites expect a count of 1 (a count of 0 fails).
+# That is also why this file needs no separate liveness control of the
+# kind test-no-false-positives.sh opens with: its very first assertion,
+# "Visa (Luhn valid)", uses the same known-positive input, and an inert
+# detector (exits 0, detects nothing) fails that plus every other
+# positive assertion in the file.
 assert_no_detect() {
   local label="$1"
   local input="$2"
 
   local output
-  output=$(bash "$DETECTORS" "$input" 2>/dev/null || true)
+  local status=0
+  output=$(bash "$DETECTORS" "$input" 2>/dev/null) || status=$?
 
-  if [[ -z "$output" ]]; then
+  if [[ $status -ne 0 ]]; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $label (detector exited $status — it did not run, so no output is not a pass)"
+    echo "        input: $input"
+  elif [[ -z "$output" ]]; then
     PASS=$((PASS + 1))
     echo "  PASS: $label (no detection)"
   else
@@ -53,9 +75,14 @@ assert_type_absent() {
   local absent_type="$3"
 
   local output
-  output=$(bash "$DETECTORS" "$input" 2>/dev/null || true)
+  local status=0
+  output=$(bash "$DETECTORS" "$input" 2>/dev/null) || status=$?
 
-  if echo "$output" | grep -q "\"type\":\"$absent_type\""; then
+  if [[ $status -ne 0 ]]; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $label (detector exited $status — it did not run, so an absent type is not a pass)"
+    echo "        input: $input"
+  elif echo "$output" | grep -q "\"type\":\"$absent_type\""; then
     FAIL=$((FAIL + 1))
     echo "  FAIL: $label (type '$absent_type' should not have appeared)"
     echo "        input: $input"
@@ -285,9 +312,11 @@ assert_confidence "Canadian SIN confidence is 'high' (Luhn-validated)" "my sin i
 # Negatives for the SIN detector's two rejection paths: the Luhn gate
 # (bad check digit) and the 9-digit shape gate (wrong length). Both are
 # keyword-positive inputs, so only the validator/regex can be what keeps
-# them silent.
+# them silent. The length negative must ALSO be Luhn-VALID or Luhn
+# rejects it first and the shape gate is never exercised — 04645420 is
+# (04645428, used here until issue #15, was not).
 assert_no_detect "Canadian SIN with an invalid Luhn check digit rejected" "my sin is 046-454-287"
-assert_no_detect "Canadian SIN of the wrong length (8 digits) rejected" "my sin is 04645428"
+assert_no_detect "Canadian SIN of the wrong length (8 digits, Luhn-valid) rejected" "my sin is 04645420"
 assert_detects "US ITIN (with 'itin' keyword -> high)" "itin 912-70-1234" "us_itin"
 assert_confidence "US ITIN WITHOUT keyword is 'medium'" "912-70-1234" "us_itin" "medium"
 assert_confidence "US ITIN WITH keyword is 'high'" "itin 912-70-1234" "us_itin" "high"
