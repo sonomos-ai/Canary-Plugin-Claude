@@ -185,6 +185,11 @@ echo "=== UK Identifiers: precision guards (redacta-informed) ==="
 # nino_valid() rejects it, so the detector stays silent entirely.
 assert_no_detect "NINO-shaped value with excluded prefix (GB) is not flagged" "batch GB602491A ready"
 assert_no_detect "NINO-shaped value with invalid first letter (Q) is not flagged" "ref QT602491A logged"
+# The spaced QQ placeholder GOV.UK (and issue #9) uses to illustrate the
+# NINO *shape* is itself invalid under rule 1, so even a keyword-rich
+# sentence must not produce a finding from it.
+assert_no_detect "GOV.UK placeholder 'QQ 12 34 56 A' is not flagged even with a keyword" \
+  "national insurance number QQ 12 34 56 A"
 # The unspaced postcode form collides with ordinary alphanumeric tokens
 # (build artifacts, product codes, hex fragments), so it must stay silent
 # unless an address/postcode keyword is present.

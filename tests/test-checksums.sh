@@ -131,6 +131,27 @@ assert_invalid "Invalid suffix (E, outside A-D)" "nino_valid" "JT602491E"
 assert_invalid "Wrong length (8 chars)" "nino_valid" "JT60249A"
 assert_invalid "GOV.UK placeholder QQ123456C (Q is an invalid first letter)" "nino_valid" "QQ123456C"
 
+# Exhaustive pinning of every exclusion the HMRC rules enumerate, so a
+# future edit to nino_valid() cannot quietly drop one of them. Every case
+# varies exactly one position and holds the rest at a known-good value,
+# so the position under test is the only reason the case can flip.
+for L in D F I Q U V; do
+  assert_invalid "Excluded FIRST letter ($L)" "nino_valid" "${L}T602491A"
+done
+for L in D F I O Q U V; do
+  assert_invalid "Excluded SECOND letter ($L)" "nino_valid" "A${L}602491A"
+done
+for P in BG GB NK KN TN NT ZZ; do
+  assert_invalid "Never-allocated prefix ($P)" "nino_valid" "${P}602491A"
+done
+# The suffix is a series letter, not a check character: all four count.
+for S in A B C D; do
+  assert_valid "Allowed suffix ($S)" "nino_valid" "JT602491$S"
+done
+for S in E Z 0; do
+  assert_invalid "Rejected suffix ($S)" "nino_valid" "JT602491$S"
+done
+
 echo ""
 echo "=== Canadian SIN (reuses Luhn) ==="
 assert_valid "Valid SIN" "luhn_valid" "046454286"
