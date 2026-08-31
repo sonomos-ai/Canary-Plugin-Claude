@@ -10,14 +10,49 @@ DETECTORS="$SCRIPT_DIR/canary/scripts/detectors.sh"
 PASS=0
 FAIL=0
 
+# ── Liveness control ─────────────────────────────────────────────────
+# Nearly every assertion in this file passes on EMPTY detector output,
+# so a detectors.sh that never really ran would take the whole suite
+# green while testing nothing. Two guards against that. First, here: run
+# a known-positive input — the Visa PAN test-detectors.sh already
+# asserts on — and refuse to go any further unless a hit comes back.
+# That covers a detector that is merely inert (exits 0, detects
+# nothing). Second, per call: assert_no_detect checks the exit status,
+# which covers a detector that dies part-way through the run.
+CONTROL_INPUT="4532015112830366"
+CONTROL_TYPE="credit_card"
+control_status=0
+control_output=$(bash "$DETECTORS" "$CONTROL_INPUT" 2>&1) || control_status=$?
+if [[ $control_status -ne 0 || "$control_output" != *"\"type\":\"$CONTROL_TYPE\""* ]]; then
+  echo "FATAL: detector liveness control failed — refusing to run a suite of"
+  echo "       no-detect assertions that would all pass vacuously."
+  echo "       detector: $DETECTORS"
+  echo "       input:    $CONTROL_INPUT (expected a '$CONTROL_TYPE' hit)"
+  echo "       exit:     $control_status"
+  echo "       output:   $control_output"
+  exit 1
+fi
+echo "Detector liveness control OK ('$CONTROL_TYPE' on the known-positive input)."
+
 assert_no_detect() {
   local label="$1"
   local input="$2"
 
+  # Deliberately no `|| true` on the command substitution. This
+  # assertion passes on empty output, so "ran and found nothing" and
+  # "did not run" are indistinguishable without the exit status.
+  # detectors.sh always ends in `exit 0`, so any non-zero status means
+  # it died (syntax error, missing dependency, signal) and its silence
+  # proves nothing — see the liveness control above.
   local output
-  output=$(bash "$DETECTORS" "$input" 2>/dev/null || true)
+  local status=0
+  output=$(bash "$DETECTORS" "$input" 2>/dev/null) || status=$?
 
-  if [[ -z "$output" ]]; then
+  if [[ $status -ne 0 ]]; then
+    FAIL=$((FAIL + 1))
+    echo "  FAIL: $label (detector exited $status — it did not run, so no output is not a pass)"
+    echo "        input: $input"
+  elif [[ -z "$output" ]]; then
     PASS=$((PASS + 1))
     echo "  PASS: $label (no false positive)"
   else
@@ -203,9 +238,12 @@ echo "=== Canadian SIN: precision guards ==="
 # A bare 9-digit number is one of the noisiest shapes there is (order
 # ids, batch refs, account numbers), so sin_canadian is gated twice: a
 # \bsin\b|social insurance keyword must be present AND the digits must
-# satisfy Luhn. Each guard is exercised on its own below.
+# satisfy Luhn. Each guard is exercised on its own below — which is why
+# the 8-digit value is Luhn-VALID: a Luhn-invalid one (04645428, used
+# here until issue #15) is rejected by the Luhn gate first, leaving the
+# length half of the shape regex pinned by nothing.
 assert_no_detect "SIN-shaped value with a bad Luhn check digit is not flagged" "my sin is 046-454-287"
-assert_no_detect "8-digit SIN-shaped value is not flagged" "my sin is 04645428"
+assert_no_detect "8-digit SIN-shaped value (Luhn-valid) is not flagged" "my sin is 04645420"
 assert_no_detect "Luhn-valid 9-digit number with no sin/insurance keyword is not flagged" \
   "reference 046454286 on file"
 # The keyword gate is a word-boundary regex, not a substring match:
