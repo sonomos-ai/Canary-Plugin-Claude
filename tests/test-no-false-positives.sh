@@ -199,6 +199,23 @@ assert_type_absent "Unspaced postcode-shaped token on a commit line is not a pos
   "commit EC1A1BB landed on main" "uk_postcode"
 
 echo ""
+echo "=== Canadian SIN: precision guards ==="
+# A bare 9-digit number is one of the noisiest shapes there is (order
+# ids, batch refs, account numbers), so sin_canadian is gated twice: a
+# \bsin\b|social insurance keyword must be present AND the digits must
+# satisfy Luhn. Each guard is exercised on its own below.
+assert_no_detect "SIN-shaped value with a bad Luhn check digit is not flagged" "my sin is 046-454-287"
+assert_no_detect "8-digit SIN-shaped value is not flagged" "my sin is 04645428"
+assert_no_detect "Luhn-valid 9-digit number with no sin/insurance keyword is not flagged" \
+  "reference 046454286 on file"
+# The keyword gate is a word-boundary regex, not a substring match:
+# "using", "since", "sing" and friends contain "sin" but must not open
+# the gate. detectors.sh pre-filters on a cheap *[Ss][Ii][Nn]* glob, so
+# this input reaches text_has_keyword and is rejected only there.
+assert_no_detect "The word 'using' does not trip the sin keyword gate" \
+  "using 046454286 as the batch id"
+
+echo ""
 echo "==============================="
 echo "Results: $PASS passed, $FAIL failed"
 echo "==============================="

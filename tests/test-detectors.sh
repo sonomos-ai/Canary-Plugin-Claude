@@ -281,6 +281,13 @@ assert_detects "NPI (Luhn w/ 80840 prefix, with 'npi' keyword)" "npi: 1234567893
 assert_detects "DEA number (check digit, with 'dea' keyword)" "dea number AB1234563" "dea_number"
 assert_detects "Canadian SIN (Luhn, with 'sin' keyword)" "my sin is 046-454-286" "sin_canadian"
 assert_detects "Canadian SIN (Luhn, with 'social insurance' phrase)" "social insurance number: 046454286" "sin_canadian"
+assert_confidence "Canadian SIN confidence is 'high' (Luhn-validated)" "my sin is 046-454-286" "sin_canadian" "high"
+# Negatives for the SIN detector's two rejection paths: the Luhn gate
+# (bad check digit) and the 9-digit shape gate (wrong length). Both are
+# keyword-positive inputs, so only the validator/regex can be what keeps
+# them silent.
+assert_no_detect "Canadian SIN with an invalid Luhn check digit rejected" "my sin is 046-454-287"
+assert_no_detect "Canadian SIN of the wrong length (8 digits) rejected" "my sin is 04645428"
 assert_detects "US ITIN (with 'itin' keyword -> high)" "itin 912-70-1234" "us_itin"
 assert_confidence "US ITIN WITHOUT keyword is 'medium'" "912-70-1234" "us_itin" "medium"
 assert_confidence "US ITIN WITH keyword is 'high'" "itin 912-70-1234" "us_itin" "high"
